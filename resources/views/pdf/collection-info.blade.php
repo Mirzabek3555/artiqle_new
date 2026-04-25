@@ -5,10 +5,7 @@
     <title>{{ $conference->title }} - Info</title>
     <style>
         @page {
-            margin-top: 25mm;
-            margin-right: 20mm;
-            margin-bottom: 25mm;
-            margin-left: 33mm;
+            margin: 25mm 20mm 25mm 33mm;
             size: A4 portrait;
         }
 

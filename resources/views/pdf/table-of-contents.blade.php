@@ -5,10 +5,7 @@
     <title>{{ $conference->title }} - Table of Contents</title>
     <style>
         @page {
-            margin-top: 20mm;
-            margin-right: 15mm;
-            margin-bottom: 20mm;
-            margin-left: 33mm;
+            margin: 20mm 15mm 20mm 33mm;
             size: A4 portrait;
         }
 
