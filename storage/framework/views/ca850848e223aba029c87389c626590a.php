@@ -2,13 +2,10 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{{ $conference->title }} - Info</title>
+    <title><?php echo e($conference->title); ?> - Info</title>
     <style>
         @page {
-            margin-top: 25mm;
-            margin-right: 20mm;
-            margin-bottom: 25mm;
-            margin-left: 33mm;
+            margin: 25mm 20mm 25mm 35mm;
             size: A4 portrait;
         }
 
@@ -90,7 +87,7 @@
     </style>
 </head>
 <body>
-    @php
+    <?php
         $confMainTitle = strtoupper($country->conference_name ?? 'THE LATEST PEDAGOGICAL AND PSYCHOLOGICAL INNOVATIONS IN EDUCATION');
         $confSubTitle = 'International online conference.';
         
@@ -153,27 +150,27 @@
             : $countryRawCode;
             
         $editor = $editorDataList[$editorCode] ?? ['name' => 'Prof. Jonathan Hartley', 'uni' => 'University College London', 'city' => 'London, Great Britain', 'email' => 'j.hartley@ucl.ac.uk'];
-    @endphp
+    ?>
 
-    <div class="text-center main-title">{{ $confMainTitle }}.</div>
-    <div class="text-center sub-title">{{ $confSubTitle }}</div>
+    <div class="text-center main-title"><?php echo e($confMainTitle); ?>.</div>
+    <div class="text-center sub-title"><?php echo e($confSubTitle); ?></div>
     
     <div class="separator"></div>
 
-    <div class="date-text">Date: {{ $dateFormatted }}</div>
+    <div class="date-text">Date: <?php echo e($dateFormatted); ?></div>
 
     <div class="paragraph">
-        “{{ $quoteTitle }}”. Collection of scientific papers on materials of the international scientific-practical conference {{ $dateFormattedNumeric }}, Pub. "ISC", {{ $editor['city'] }}, {{ $totalPages ?? 163 }} p.
+        “<?php echo e($quoteTitle); ?>”. Collection of scientific papers on materials of the international scientific-practical conference <?php echo e($dateFormattedNumeric); ?>, Pub. "ISC", <?php echo e($editor['city']); ?>, <?php echo e($totalPages ?? 163); ?> p.
     </div>
 
     <div class="editor-section">
         <div class="editor-title">Editor:</div>
-        <div class="editor-name">{{ $editor['name'] }}</div>
+        <div class="editor-name"><?php echo e($editor['name']); ?></div>
         <div>Current ISC Editors</div>
-        <div>{{ $editor['uni'] }}</div>
-        <div>{{ $editor['city'] }}</div>
+        <div><?php echo e($editor['uni']); ?></div>
+        <div><?php echo e($editor['city']); ?></div>
         <div style="margin-top: 5px;">
-            <span class="editor-name">Email: </span><a href="mailto:{{ $editor['email'] }}" class="email-link">{{ $editor['email'] }}</a>
+            <span class="editor-name">Email: </span><a href="mailto:<?php echo e($editor['email']); ?>" class="email-link"><?php echo e($editor['email']); ?></a>
         </div>
     </div>
 
@@ -190,3 +187,4 @@
     </div>
 </body>
 </html>
+<?php /**PATH D:\Projects\artiqle\resources\views/pdf/collection-info.blade.php ENDPATH**/ ?>

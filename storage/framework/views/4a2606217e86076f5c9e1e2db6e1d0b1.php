@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{{ $conference->title }} - Collection</title>
+    <title><?php echo e($conference->title); ?> - Collection</title>
     <style>
         @page {
             margin: 0;
@@ -216,7 +216,7 @@
 <body>
     <div class="cover">
 
-        @php
+        <?php
             // Rasm izlash: endi to'g'ridan-to'g'ri sertifikatdagi kabi images/certificates/backgrounds papkasidan olinadi
             $rawCode = strtoupper($country->code ?? 'GB');
             $alpha3 = [
@@ -330,78 +330,79 @@
 
             // Konferensiya turi
             $confSubTitle = 'INTERNATIONAL ONLINE CONFERENCE';
-        @endphp
+        ?>
 
-        {{-- FOTO QISMI --}}
+        
         <div class="photo-section">
-            @if($finalPhotoBase64)
-                <img src="{{ $finalPhotoBase64 }}" alt="{{ $country->name }}">
-            @else
+            <?php if($finalPhotoBase64): ?>
+                <img src="<?php echo e($finalPhotoBase64); ?>" alt="<?php echo e($country->name); ?>">
+            <?php else: ?>
                 <div class="photo-section-bg"></div>
-            @endif
-            {{-- GRADIENT FADE --}}
+            <?php endif; ?>
+            
             <div class="photo-fade"></div>
         </div>
 
-        {{-- ICP LOGO (yuqori o'ng) --}}
-        @if($icpLogoBase64)
+        
+        <?php if($icpLogoBase64): ?>
         <div class="icp-logo-corner">
-            <img src="{{ $icpLogoBase64 }}" alt="ICP Logo">
+            <img src="<?php echo e($icpLogoBase64); ?>" alt="ICP Logo">
         </div>
-        @endif
+        <?php endif; ?>
 
-        {{-- DAVLAT NOMI --}}
+        
         <div class="country-name-section">
-            @php
+            <?php
                 // Davlat nomini ikki qatorga bo'lish (2 so'z yoki undan ko'p bo'lsa)
                 $nameParts = explode(' ', $countryNameEn);
                 $nameLine1 = $nameParts[0] ?? $countryNameEn;
                 $nameLine2 = count($nameParts) > 1 ? implode(' ', array_slice($nameParts, 1)) : '';
-            @endphp
+            ?>
             <div class="country-name-wrapper">
                 <div class="country-name-text">
-                    {{ $nameLine1 }}<br>
-                    @if($nameLine2)
-                        {{ $nameLine2 }}
-                    @endif
+                    <?php echo e($nameLine1); ?><br>
+                    <?php if($nameLine2): ?>
+                        <?php echo e($nameLine2); ?>
+
+                    <?php endif; ?>
                 </div>
                 <div class="country-name-underline"></div>
             </div>
         </div>
 
-        {{-- PASTKI MAZMUN --}}
-        {{-- Sarlavha --}}
+        
+        
         <div class="conference-title-block">
-            <div class="conference-main-title">{{ $confMainTitle }}</div>
-            <div class="conference-sub-title">{{ $confSubTitle }}</div>
+            <div class="conference-main-title"><?php echo e($confMainTitle); ?></div>
+            <div class="conference-sub-title"><?php echo e($confSubTitle); ?></div>
         </div>
 
-        {{-- PASTKI FOOTER QISMI (DomPDF uchun Table layout) --}}
+        
         <table class="footer-table">
             <tr>
-                {{-- Veb-sayt (Chap burchak) --}}
+                
                 <td class="footer-website">
                     WWW.INTERNATIONALSCIENTIFICCONFERENCES.ORG
                 </td>
 
-                {{-- Bayroq (Markazda) --}}
+                
                 <td class="footer-flag-container">
-                    @if($flagBase64)
-                        <img src="{{ $flagBase64 }}" alt="{{ $country->name }} flag">
-                    @elseif($flagPath)
-                        <img src="{{ $flagPath }}" alt="{{ $country->name }} flag">
-                    @else
+                    <?php if($flagBase64): ?>
+                        <img src="<?php echo e($flagBase64); ?>" alt="<?php echo e($country->name); ?> flag">
+                    <?php elseif($flagPath): ?>
+                        <img src="<?php echo e($flagPath); ?>" alt="<?php echo e($country->name); ?> flag">
+                    <?php else: ?>
                         <div class="footer-flag-placeholder">🌍</div>
-                    @endif
+                    <?php endif; ?>
                 </td>
 
-                {{-- QR kod (O'ng burchak) --}}
+                
                 <td class="footer-qr-container">
-                    @if($certQrBase64)
-                        <img src="{{ $certQrBase64 }}" alt="QR Code">
-                    @elseif($hasQrCode)
-                        <img src="{{ $qrCodePath }}" alt="QR Code">
-                    @endif
+                    <?php if($certQrBase64): ?>
+                        <img src="<?php echo e($certQrBase64); ?>" alt="QR Code">
+                    <?php elseif($hasQrCode): ?>
+                        <img src="<?php echo e($qrCodePath); ?>" alt="QR Code">
+                    <?php endif; ?>
                 </td>
             </tr>
         </table>
@@ -409,4 +410,4 @@
     </div>
 </body>
 
-</html>
+</html><?php /**PATH D:\Projects\artiqle\resources\views/pdf/collection-cover.blade.php ENDPATH**/ ?>

@@ -2075,12 +2075,21 @@ class ArticlePdfService
         // 4. Mundarija sahifasi (Oxirida qo'shiladi)
         $tocPath = $this->generateTableOfContents($conference);
         if (file_exists($tocPath)) {
+            $headerImgPath = $this->getOptimizedImagePath(public_path('images/logo.png'), 150);
+            $logoPath = $this->getOptimizedImagePath(public_path('images/logo.png'), 250);
+
             $pdf->setSourceFile($tocPath);
             $pageCount = $pdf->setSourceFile($tocPath);
             for ($i = 1; $i <= $pageCount; $i++) {
                 $tplId = $pdf->importPage($i);
                 $pdf->AddPage();
                 $pdf->useTemplate($tplId, 0, 0, 210, 297);
+                
+                // Dizayn (overlay) ni qo'llash
+                $this->drawIncopSidebar($pdf, 28, $headerImgPath, $logoPath);
+                $this->drawIncopRunningHeader($pdf, null, $conference, 33);
+                $this->drawIncopFooter($pdf, null, $conference->country, $currentPage, 0, 33);
+                $currentPage++;
             }
         }
 
@@ -2201,7 +2210,7 @@ class ArticlePdfService
             mkdir($directory, 0755, true);
         }
 
-        $this->renderSimpleHtmlToPdf($html, $path, '0', '0', '0', '0');
+        $this->renderSimpleHtmlToPdf($html, $path, '25mm', '25mm', '33mm', '20mm');
 
         return $path;
     }
@@ -2388,7 +2397,7 @@ class ArticlePdfService
             mkdir($directory, 0755, true);
         }
 
-        $this->renderSimpleHtmlToPdf($html, $path, '15mm', '15mm', '15mm', '15mm');
+        $this->renderSimpleHtmlToPdf($html, $path, '20mm', '20mm', '33mm', '15mm');
 
         return $path;
     }

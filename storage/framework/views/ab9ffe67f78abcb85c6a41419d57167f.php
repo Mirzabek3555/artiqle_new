@@ -2,13 +2,10 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{{ $conference->title }} - Table of Contents</title>
+    <title><?php echo e($conference->title); ?> - Table of Contents</title>
     <style>
         @page {
-            margin-top: 20mm;
-            margin-right: 15mm;
-            margin-bottom: 20mm;
-            margin-left: 33mm;
+            margin: 25mm 20mm;
             size: A4 portrait;
         }
 
@@ -76,7 +73,8 @@
 
 <body>
     <div class="date">
-        Date: {{ $conference->conference_date->format('jS F-Y') }}
+        Date: <?php echo e($conference->conference_date->format('jS F-Y')); ?>
+
     </div>
     
     <table class="toc-table">
@@ -88,25 +86,29 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($articles as $article)
+            <?php $__currentLoopData = $articles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $article): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
             <tr>
                 <td class="toc-cell">
                     <div style="font-weight: bold;">
-                        {{ $article->author_name ?? $article->author_display_name }}
-                        @if($article->co_authors)
-                            <br>{!! nl2br(e($article->co_authors)) !!}
-                        @endif
+                        <?php echo e($article->author_name ?? $article->author_display_name); ?>
+
+                        <?php if($article->co_authors): ?>
+                            <br><?php echo nl2br(e($article->co_authors)); ?>
+
+                        <?php endif; ?>
                     </div>
                     <div style="text-transform: uppercase; margin-top: 5px;">
-                        {{ $article->title }}
+                        <?php echo e($article->title); ?>
+
                     </div>
                 </td>
                 <td class="toc-page">
-                    {{ $article->page_range ?? '—' }}
+                    <?php echo e($article->page_range ?? '—'); ?>
+
                 </td>
             </tr>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </tbody>
     </table>
 </body>
-</html>
+</html><?php /**PATH D:\Projects\artiqle\resources\views/pdf/table-of-contents.blade.php ENDPATH**/ ?>
