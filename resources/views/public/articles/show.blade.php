@@ -26,16 +26,16 @@ GOOGLE SCHOLAR META TAGS (CRITICAL)
     @endif
 
     <!-- Publication Information -->
-    <meta name="citation_publication_date"
-        content="{{ $article->published_at ? $article->published_at->format('Y/m/d') : $article->created_at->format('Y/m/d') }}">
-    <meta name="citation_conference_title"
-        content="{{ $article->conference->country->conference_name ?? $article->conference->title }}">
+    <meta name="citation_publication_date" content="{{ $article->created_at->format('Y/m/d') }}">
+    <meta name="citation_journal_title" content="{{ $article->conference->title ?? 'International Scientific Conferences' }}">
+    <meta name="citation_conference_title" content="{{ $article->conference->country->conference_name ?? $article->conference->title }}">
     <meta name="citation_publisher" content="International Scientific Online Conference (ISOC)">
 
     <!-- Abstract (Important for indexing) -->
     @if($article->abstract)
         <meta name="citation_abstract" content="{{ $article->abstract }}">
     @endif
+    <meta name="citation_abstract_html_url" content="{{ url('article/' . $article->id) }}">
 
     <!-- Keywords -->
     @if($article->keywords)
@@ -43,11 +43,7 @@ GOOGLE SCHOLAR META TAGS (CRITICAL)
     @endif
 
     <!-- PDF URL (CRITICAL - Must be publicly accessible) -->
-    @if($article->formatted_pdf_path)
-        <meta name="citation_pdf_url" content="{{ url(Storage::url($article->formatted_pdf_path)) }}">
-    @elseif($article->pdf_path)
-        <meta name="citation_pdf_url" content="{{ url(Storage::url($article->pdf_path)) }}">
-    @endif
+    <meta name="citation_pdf_url" content="{{ url('storage/' . ($article->formatted_pdf_path ?? $article->pdf_path)) }}">
 
     <!-- Page Numbers -->
     @if($article->start_page)
@@ -58,7 +54,7 @@ GOOGLE SCHOLAR META TAGS (CRITICAL)
     @endif
 
     <!-- Language -->
-    <meta name="citation_language" content="en">
+    <meta name="citation_language" content="{{ $article->language ?? 'en' }}">
 
     <!-- Public URL -->
     <meta name="citation_public_url" content="{{ route('article.show', $article) }}">
