@@ -235,7 +235,7 @@ class ArticleController extends Controller
             ]);
         }
         catch (\Exception $e) {
-            \Log::error('PDF creation failed: ' . $e->getMessage());
+            \Log::error('PDF creation failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()
                 ->with('error', 'PDF yaratishda xatolik: ' . $e->getMessage())
                 ->withInput();

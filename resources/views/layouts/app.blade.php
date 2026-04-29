@@ -670,7 +670,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <span><i class="bi bi-telephone me-2"></i>+998 97 510 64 45</span>
+                    
                 </div>
                 <div class="col-md-6 text-end">
                     @auth
@@ -765,12 +765,7 @@
                         <li><a href="{{ route('archive') }}">Archive</a></li>
                     </ul>
                 </div>
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <h5>Contact</h5>
-                    <p>
-                        <i class="bi bi-telephone me-2"></i>+998 97 510 64 45
-                    </p>
-                </div>
+                <!-- Contact section removed -->
             </div>
             <div class="footer-bottom">
                 <p class="mb-0">&copy; {{ date('Y') }} International Scientific Conferences. All rights reserved.</p>

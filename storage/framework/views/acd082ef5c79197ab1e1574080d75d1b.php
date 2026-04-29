@@ -1,18 +1,19 @@
-@extends('layouts.app')
 
-@section('title', $country->conference_name ?? $country->name)
 
-@section('content')
+<?php $__env->startSection('title', $country->conference_name ?? $country->name); ?>
+
+<?php $__env->startSection('content'); ?>
     <!-- Journal Header -->
     <section class="journal-header py-3" style="background: #fff; border-bottom: 3px solid #1a5276;">
         <div class="container">
             <h1 class="journal-title mb-2" style="color: #1a5276; font-size: 1.8rem; font-weight: 600; line-height: 1.3;">
-                {{ $country->conference_name ?? 'International Scientific Conference Proceedings' }}
+                <?php echo e($country->conference_name ?? 'International Scientific Conference Proceedings'); ?>
+
             </h1>
             <!-- Navigation -->
             <nav class="journal-nav">
                 <a href="#current" class="journal-nav-link active">Current</a>
-                <a href="{{ route('archive') }}" class="journal-nav-link">Archives</a>
+                <a href="<?php echo e(route('archive')); ?>" class="journal-nav-link">Archives</a>
                 <a href="#" class="journal-nav-link">About</a>
             </nav>
         </div>
@@ -28,8 +29,9 @@
 
                     <div class="issue-info mb-4">
                         <h3 class="issue-title" style="color: #1a5276; font-size: 1.1rem; font-weight: 600;">
-                            Vol. {{ date('Y') }} No. {{ date('m') }} ({{ date('Y') }}):
-                            {{ $country->conference_name ?? $country->name . ' - Scientific Conference Proceedings' }}
+                            Vol. <?php echo e(date('Y')); ?> No. <?php echo e(date('m')); ?> (<?php echo e(date('Y')); ?>):
+                            <?php echo e($country->conference_name ?? $country->name . ' - Scientific Conference Proceedings'); ?>
+
                         </h3>
 
                         <div class="row mt-4">
@@ -37,32 +39,34 @@
                             <div class="col-md-4 mb-3 mb-md-0">
                                 <!-- Cover Header -->
                                 <div class="position-relative shadow-sm" style="height: 320px; overflow: hidden; background: #fff; border: 1px solid #eee; border-radius: 4px;">
-                                    @if($country->cover_image)
-                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('{{ asset($country->cover_image) }}'); background-size: contain; background-position: center; background-repeat: no-repeat; z-index: 1;"></div>
-                                    @else
+                                    <?php if($country->cover_image): ?>
+                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('<?php echo e(asset($country->cover_image)); ?>'); background-size: contain; background-position: center; background-repeat: no-repeat; z-index: 1;"></div>
+                                    <?php else: ?>
                                         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a3a5f 0%, #0d2137 100%); z-index: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white;">
-                                            @if($country->flag_url)
-                                                <img src="{{ Storage::url($country->flag_url) }}" style="width: 80px; height: 50px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
-                                            @endif
-                                            <h4 style="font-weight: bold; margin: 0; text-align: center; padding: 0 10px;">{{ strtoupper($country->name_en ?? $country->name) }}</h4>
+                                            <?php if($country->flag_url): ?>
+                                                <img src="<?php echo e(Storage::url($country->flag_url)); ?>" style="width: 80px; height: 50px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                                            <?php endif; ?>
+                                            <h4 style="font-weight: bold; margin: 0; text-align: center; padding: 0 10px;"><?php echo e(strtoupper($country->name_en ?? $country->name)); ?></h4>
                                         </div>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <!-- Description -->
                             <div class="col-md-8">
                                 <p class="text-muted" style="line-height: 1.7;">
-                                    @if($country->conference_description)
-                                        {{ $country->conference_description }}
-                                    @else
+                                    <?php if($country->conference_description): ?>
+                                        <?php echo e($country->conference_description); ?>
+
+                                    <?php else: ?>
                                         The Proceedings of the scientific conference on multidisciplinary research are an
                                         electronic conference series.
                                         The materials of this conference publish the original research work presented by the
                                         conference participants.
-                                    @endif
+                                    <?php endif; ?>
                                 </p>
                                 <p class="mt-3">
-                                    <strong>Published:</strong> {{ now()->format('Y-m-d') }}
+                                    <strong>Published:</strong> <?php echo e(now()->format('Y-m-d')); ?>
+
                                 </p>
                             </div>
                         </div>
@@ -74,45 +78,48 @@
                     <fieldset class="articles-fieldset">
                         <legend>Articles</legend>
 
-                        @forelse($articles as $article)
-                            <div class="article-item py-3 {{ !$loop->last ? 'border-bottom' : '' }}">
+                        <?php $__empty_1 = true; $__currentLoopData = $articles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $article): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <div class="article-item py-3 <?php echo e(!$loop->last ? 'border-bottom' : ''); ?>">
                                 <h4 class="article-title">
-                                    <a href="{{ route('article.show', $article) }}">
-                                        {{ strtoupper($article->title) }}
+                                    <a href="<?php echo e(route('article.show', $article)); ?>">
+                                        <?php echo e(strtoupper($article->title)); ?>
+
                                     </a>
                                 </h4>
                                 <p class="article-authors text-muted mb-2">
-                                    {{ $article->author_name ?? $article->author_display_name }}
-                                    @if($article->author_affiliation)
-                                        <br><small class="text-secondary">{{ $article->author_affiliation }}</small>
-                                    @endif
+                                    <?php echo e($article->author_name ?? $article->author_display_name); ?>
+
+                                    <?php if($article->author_affiliation): ?>
+                                        <br><small class="text-secondary"><?php echo e($article->author_affiliation); ?></small>
+                                    <?php endif; ?>
                                 </p>
                                 <div class="d-flex align-items-center gap-3">
-                                    @if($article->formatted_pdf_path || $article->pdf_path)
-                                        <a href="{{ Storage::url($article->formatted_pdf_path ?? $article->pdf_path) }}"
+                                    <?php if($article->formatted_pdf_path || $article->pdf_path): ?>
+                                        <a href="<?php echo e(Storage::url($article->formatted_pdf_path ?? $article->pdf_path)); ?>"
                                             class="btn btn-outline-secondary btn-sm" target="_blank"
-                                            download="{{ $article->page_range ? $article->page_range . '.pdf' : 'article.pdf' }}">
+                                            download="<?php echo e($article->page_range ? $article->page_range . '.pdf' : 'article.pdf'); ?>">
                                             <i class="bi bi-file-pdf me-1"></i>download
                                         </a>
-                                    @endif
-                                    <span class="text-muted ms-auto">{{ $article->page_range }}</span>
+                                    <?php endif; ?>
+                                    <span class="text-muted ms-auto"><?php echo e($article->page_range); ?></span>
                                 </div>
                             </div>
-                        @empty
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <div class="text-center py-5">
                                 <i class="bi bi-file-earmark-x display-4 text-muted"></i>
                                 <p class="mt-3 text-muted">No articles published yet.</p>
                             </div>
-                        @endforelse
+                        <?php endif; ?>
                     </fieldset>
                 </section>
 
                 <!-- Pagination -->
-                @if($articles->hasPages())
+                <?php if($articles->hasPages()): ?>
                     <div class="d-flex justify-content-center mt-4">
-                        {{ $articles->links() }}
+                        <?php echo e($articles->links()); ?>
+
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
 
             <!-- Sidebar -->
@@ -131,12 +138,12 @@
                 <div class="sidebar-block mb-4">
                     <h5 class="sidebar-title">Conference Country</h5>
                     <div class="country-info text-center py-3">
-                        @if($country->flag_url)
-                            <img src="{{ Storage::url($country->flag_url) }}" alt="{{ $country->name }}"
+                        <?php if($country->flag_url): ?>
+                            <img src="<?php echo e(Storage::url($country->flag_url)); ?>" alt="<?php echo e($country->name); ?>"
                                 style="width: 100px; height: 65px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.15);">
-                        @endif
-                        <h6 class="mt-3 mb-1">{{ $country->name }}</h6>
-                        <p class="text-muted small mb-0">{{ $country->name_en }}</p>
+                        <?php endif; ?>
+                        <h6 class="mt-3 mb-1"><?php echo e($country->name); ?></h6>
+                        <p class="text-muted small mb-0"><?php echo e($country->name_en); ?></p>
                     </div>
                 </div>
 
@@ -146,11 +153,11 @@
                     <ul class="stats-list">
                         <li>
                             <span class="stat-label"><i class="bi bi-file-earmark-text me-2"></i>Total Articles</span>
-                            <span class="stat-value">{{ $articles->total() }}</span>
+                            <span class="stat-value"><?php echo e($articles->total()); ?></span>
                         </li>
                         <li>
                             <span class="stat-label"><i class="bi bi-calendar-check me-2"></i>Published</span>
-                            <span class="stat-value">{{ date('Y') }}</span>
+                            <span class="stat-value"><?php echo e(date('Y')); ?></span>
                         </li>
                         <li>
                             <span class="stat-label"><i class="bi bi-award me-2"></i>Certificate</span>
@@ -160,7 +167,7 @@
                 </div>
 
                 <!-- QR Code -->
-                @if($country->cover_image)
+                <?php if($country->cover_image): ?>
                     <div class="sidebar-block">
                         <h5 class="sidebar-title">Quick Access</h5>
                         <div class="text-center py-3">
@@ -171,7 +178,7 @@
                             <p class="text-muted small mt-2 mb-0">Scan to access</p>
                         </div>
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -340,4 +347,5 @@
             border-bottom: 1px solid #e0e0e0;
         }
     </style>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\artiqle\resources\views/public/countries/show.blade.php ENDPATH**/ ?>

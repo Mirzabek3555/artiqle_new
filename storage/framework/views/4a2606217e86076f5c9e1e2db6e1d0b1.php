@@ -40,14 +40,14 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 165mm; /* Rasm qat'iy balandlikda (DomPDF uchun) */
+            height: 100%; /* Rasm butun sahifani egallaydi */
             z-index: 1; /* Matn uning ustiga chiqadi */
             overflow: hidden;
         }
 
         .photo-section img {
             width: 100%;
-            min-height: 165mm;
+            height: 100%;
             object-fit: cover;
             object-position: center;
         }
@@ -55,7 +55,6 @@
         .photo-section-bg {
             width: 100%;
             height: 100%;
-            background: #17428f; /* gradient ishlamasa solid rang */
             background: linear-gradient(180deg, #6ba5ff 0%, #17428f 100%);
         }
 
@@ -97,7 +96,7 @@
            ============================ */
         .country-name-section {
             position: absolute;
-            top: 145mm; /* DomPDF uchun qat'iy top */
+            bottom: 65mm;
             right: 0;
             left: 0;
             z-index: 11;
@@ -130,7 +129,7 @@
            ============================ */
         .conference-title-block {
             position: absolute;
-            top: 210mm; /* DomPDF uchun qat'iy top */
+            bottom: 40mm;
             left: 0;
             right: 0;
             text-align: center;
@@ -154,32 +153,30 @@
             text-transform: uppercase;
         }
 
-        /* Footer table layout for DomPDF compatibility */
-        .footer-table {
+        /* Footer flexbox layout */
+        .footer-container {
             position: absolute;
             bottom: 12mm;
             left: 15mm;
-            width: 180mm; /* 210 - 15 - 15 */
+            right: 15mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             z-index: 10;
-            border-collapse: collapse;
-        }
-
-        .footer-table td {
-            vertical-align: middle;
         }
 
         .footer-website {
+            flex: 1;
             font-size: 10px;
             font-weight: 900;
             color: #041E4F;
             text-transform: uppercase;
             text-align: left;
-            width: 33%;
         }
 
         .footer-flag-container {
+            flex: 1;
             text-align: center;
-            width: 34%;
         }
 
         .footer-flag-container img, .footer-flag-placeholder {
@@ -188,6 +185,7 @@
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #ffffff;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
             display: inline-block;
         }
         
@@ -195,12 +193,11 @@
             background: #cccccc;
             line-height: 55px;
             font-size: 22px;
-            text-align: center;
         }
 
         .footer-qr-container {
+            flex: 1;
             text-align: right;
-            width: 33%;
         }
 
         .footer-qr-container img,
@@ -378,34 +375,32 @@
         </div>
 
         
-        <table class="footer-table">
-            <tr>
-                
-                <td class="footer-website">
-                    WWW.INTERNATIONALSCIENTIFICCONFERENCES.ORG
-                </td>
+        <div class="footer-container">
+            
+            <div class="footer-website">
+                WWW.INTERNATIONALSCIENTIFICCONFERENCES.ORG
+            </div>
 
-                
-                <td class="footer-flag-container">
-                    <?php if($flagBase64): ?>
-                        <img src="<?php echo e($flagBase64); ?>" alt="<?php echo e($country->name); ?> flag">
-                    <?php elseif($flagPath): ?>
-                        <img src="<?php echo e($flagPath); ?>" alt="<?php echo e($country->name); ?> flag">
-                    <?php else: ?>
-                        <div class="footer-flag-placeholder">🌍</div>
-                    <?php endif; ?>
-                </td>
+            
+            <div class="footer-flag-container">
+                <?php if($flagBase64): ?>
+                    <img src="<?php echo e($flagBase64); ?>" alt="<?php echo e($country->name); ?> flag">
+                <?php elseif($flagPath): ?>
+                    <img src="<?php echo e($flagPath); ?>" alt="<?php echo e($country->name); ?> flag">
+                <?php else: ?>
+                    <div class="footer-flag-placeholder">🌍</div>
+                <?php endif; ?>
+            </div>
 
-                
-                <td class="footer-qr-container">
-                    <?php if($certQrBase64): ?>
-                        <img src="<?php echo e($certQrBase64); ?>" alt="QR Code">
-                    <?php elseif($hasQrCode): ?>
-                        <img src="<?php echo e($qrCodePath); ?>" alt="QR Code">
-                    <?php endif; ?>
-                </td>
-            </tr>
-        </table>
+            
+            <div class="footer-qr-container">
+                <?php if($certQrBase64): ?>
+                    <img src="<?php echo e($certQrBase64); ?>" alt="QR Code">
+                <?php elseif($hasQrCode): ?>
+                    <img src="<?php echo e($qrCodePath); ?>" alt="QR Code">
+                <?php endif; ?>
+            </div>
+        </div>
 
     </div>
 </body>

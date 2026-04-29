@@ -5,7 +5,7 @@
     <title><?php echo e($conference->title); ?> - Info</title>
     <style>
         @page {
-            margin: 25mm 20mm 25mm 35mm;
+            margin: 25mm 20mm 25mm 33mm;
             size: A4 portrait;
         }
 

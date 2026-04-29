@@ -67,34 +67,18 @@
                     <div class="col-md-6">
                         <a href="<?php echo e(route('country.show', $country)); ?>" class="text-decoration-none">
                             <div class="card conference-card h-100 border-0 shadow-sm overflow-hidden">
-                                <!-- Cover Image Header -->
-                                <div class="card-img-top position-relative" style="height: 280px; overflow: hidden; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                                <!-- Cover Header -->
+                                <div class="card-img-top position-relative" style="height: 380px; overflow: hidden; background: #fff; border-bottom: 1px solid #eee;">
                                     <?php if($country->cover_image): ?>
-                                        <img src="<?php echo e(asset($country->cover_image)); ?>" 
-                                             alt="<?php echo e($country->name); ?>"
-                                             style="width: 100%; height: 100%; object-fit: contain; padding: 10px;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('<?php echo e(asset($country->cover_image)); ?>'); background-size: contain; background-position: center; background-repeat: no-repeat; z-index: 1;"></div>
                                     <?php else: ?>
-                                        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1a3a5f 0%, #0d2137 100%); display: flex; align-items: center; justify-content: center;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a3a5f 0%, #0d2137 100%); z-index: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white;">
                                             <?php if($country->flag_url): ?>
-                                                <img src="<?php echo e(Storage::url($country->flag_url)); ?>" 
-                                                     alt="<?php echo e($country->name); ?>"
-                                                     style="width: 100px; height: 65px; object-fit: cover; border-radius: 5px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
-                                            <?php else: ?>
-                                                <i class="bi bi-globe-americas text-white" style="font-size: 4rem; opacity: 0.5;"></i>
+                                                <img src="<?php echo e(Storage::url($country->flag_url)); ?>" style="width: 80px; height: 50px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
                                             <?php endif; ?>
+                                            <h3 style="font-weight: bold; margin: 0; text-align: center;"><?php echo e(strtoupper($country->name_en ?? $country->name)); ?></h3>
                                         </div>
                                     <?php endif; ?>
-                                    <!-- Country badge overlay -->
-                                    <div class="position-absolute top-0 end-0 m-3">
-                                        <span class="badge bg-white text-dark shadow-sm px-3 py-2">
-                                            <?php if($country->flag_url): ?>
-                                                <img src="<?php echo e(Storage::url($country->flag_url)); ?>" 
-                                                     style="width: 20px; height: 14px; object-fit: cover; border-radius: 2px; margin-right: 5px;">
-                                            <?php endif; ?>
-                                            <?php echo e($country->name); ?>
-
-                                        </span>
-                                    </div>
                                 </div>
                                 
                                 <!-- Card Body -->
@@ -235,6 +219,8 @@
         .conference-card:hover .card-img-top img {
             transform: scale(1.05);
         }
+        
+
     </style>
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\artiqle\resources\views/public/home.blade.php ENDPATH**/ ?>

@@ -5,7 +5,7 @@
     <title><?php echo e($conference->title); ?> - Table of Contents</title>
     <style>
         @page {
-            margin: 25mm 20mm;
+            margin: 20mm 15mm 20mm 33mm;
             size: A4 portrait;
         }
 

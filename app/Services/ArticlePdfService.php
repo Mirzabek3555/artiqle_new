@@ -363,7 +363,7 @@ class ArticlePdfService
         // ULTRA HIGH compression settings
         $pdf = new Fpdi('P', 'mm', 'A4');
         $pdf->SetCompression(true);
-        $pdf->setFontSubsetting(false); // DISABLE subsetting - saves memory!
+        $pdf->setFontSubsetting(true); // Unicode shriftlar uchun subsetting kerak
         $pdf->setJPEGQuality(15); // MAXIMUM compression
         $pdf->setImageScale(1.53);
 
@@ -709,7 +709,7 @@ class ArticlePdfService
         // ========================================
         $pdf = new Fpdi('P', 'mm', 'A4');
         $pdf->SetCompression(true);
-        $pdf->setFontSubsetting(false);
+        $pdf->setFontSubsetting(true); // Unicode shriftlar uchun subsetting kerak
         $pdf->setJPEGQuality(15);
         $pdf->setImageScale(1.53);
 
@@ -955,19 +955,52 @@ class ArticlePdfService
 
         // 4. Info Block heights
         $titleObj = strtoupper($article->title);
-        $authorObj = $article->author_name;
-        $affiliationObj = $article->author_affiliation ?? '';
+        
+        $authorsData = [];
+        $mainAuthor = trim($article->author_display_name ?? $article->author_name);
+        if (!empty($mainAuthor)) {
+            $authorsData[] = [
+                'name' => $mainAuthor,
+                'affiliation' => trim($article->author_affiliation ?? '')
+            ];
+        }
+
+        if (!empty($article->co_authors)) {
+            $coAuthorsRaw = explode("\n", trim($article->co_authors));
+            foreach ($coAuthorsRaw as $ca) {
+                $nameParts = explode(',', $ca);
+                $caName = trim($nameParts[0]);
+                $caAffiliation = '';
+                if (count($nameParts) > 1) {
+                    $affParts = array_slice($nameParts, 1);
+                    $caAffiliation = trim(implode(',', $affParts));
+                }
+                if (!empty($caName)) {
+                    $authorsData[] = [
+                        'name' => $caName,
+                        'affiliation' => $caAffiliation
+                    ];
+                }
+            }
+        }
+
         $abstractObj = strip_tags($article->abstract);
         $keywordsObj = strip_tags($article->keywords);
 
         $pdf->SetFont('times', 'B', 14);
         $titleH = $pdf->getStringHeight($contentWidth, $titleObj);
 
-        $pdf->SetFont('times', 'B', 12);
-        $authorH = $pdf->getStringHeight($contentWidth, $authorObj);
-
-        $pdf->SetFont('times', 'I', 10);
-        $affiliationH = empty($affiliationObj) ? 0 : $pdf->getStringHeight($contentWidth, $affiliationObj);
+        $authorsH = 0;
+        foreach ($authorsData as $author) {
+            $pdf->SetFont('times', 'B', 12);
+            $authorsH += $pdf->getStringHeight($contentWidth, $author['name']);
+            if (!empty($author['affiliation'])) {
+                $pdf->SetFont('times', 'I', 10);
+                $authorsH += $pdf->getStringHeight($contentWidth, $author['affiliation']) + 1;
+            }
+            $authorsH += 1; // Gap between authors
+        }
+        $authorsH -= 1; // Remove last gap
 
         $pdf->SetFont('times', '', 11);
         $abstractH = empty($abstractObj) ? 0 : $pdf->getStringHeight($contentWidth - 6, "Annotatsiya: " . $abstractObj) + 4;
@@ -977,7 +1010,7 @@ class ArticlePdfService
 
         $padding = 5;
         $gap = 3;
-        $totalBlockHeight = $titleH + $gap + $authorH + ($affiliationH ? 1 + $affiliationH : 0) + $gap 
+        $totalBlockHeight = $titleH + $gap + $authorsH + $gap 
                             + ($abstractH ? $abstractH + $gap + 2 : 0) 
                             + ($keywordsH ? $keywordsH + $gap + 2 : 0) 
                             + $padding * 2;
@@ -1027,12 +1060,11 @@ class ArticlePdfService
 
         // 2. Subtitle (Grey, Date, Country)
         $pdf->SetX($leftMargin);
-        $pdf->SetFont('helvetica', '', 7);
+        $pdf->SetFont('helvetica', '', 9);
         $pdf->SetTextColor(100, 100, 100);
-        $confTitle = ucfirst(strtolower($conference->title ?? 'International scientific conferences'));
         $confDate = $conference->conference_date ? $conference->conference_date->format('F d, Y') : date('F d, Y');
         $countryName = $country->name_en ?? $country->name;
-        $pdf->Cell($contentWidth, 4, "$confTitle • $confDate • $countryName", 0, 1, 'C');
+        $pdf->Cell($contentWidth, 5, "International Scientific Conferences • $confDate • $countryName", 0, 1, 'C');
 
         // 3. Separator Line (davlat primary rangida)
         $currentY = $pdf->GetY() + 1;
@@ -1047,23 +1079,33 @@ class ArticlePdfService
 
         $titleObj = strtoupper($article->title);
 
-        $authorsListObj = [];
-        $mainAuthor = mb_convert_case(trim($article->author_display_name), MB_CASE_TITLE, 'UTF-8');
+        $authorsData = [];
+        $mainAuthor = trim($article->author_display_name ?? $article->author_name);
         if (!empty($mainAuthor)) {
-            $authorsListObj[] = $mainAuthor;
+            $authorsData[] = [
+                'name' => $mainAuthor,
+                'affiliation' => trim($article->author_affiliation ?? '')
+            ];
         }
 
         if (!empty($article->co_authors)) {
             $coAuthorsRaw = explode("\n", trim($article->co_authors));
             foreach ($coAuthorsRaw as $ca) {
                 $nameParts = explode(',', $ca);
-                $caName = mb_convert_case(trim($nameParts[0]), MB_CASE_TITLE, 'UTF-8');
+                $caName = trim($nameParts[0]);
+                $caAffiliation = '';
+                if (count($nameParts) > 1) {
+                    $affParts = array_slice($nameParts, 1);
+                    $caAffiliation = trim(implode(',', $affParts));
+                }
                 if (!empty($caName)) {
-                    $authorsListObj[] = $caName;
+                    $authorsData[] = [
+                        'name' => $caName,
+                        'affiliation' => $caAffiliation
+                    ];
                 }
             }
         }
-        $authorObj = implode(', ', $authorsListObj);
 
         $affiliationObj = $article->author_affiliation ?? '';
         $abstractObj = strip_tags($article->abstract);
@@ -1073,11 +1115,17 @@ class ArticlePdfService
         $pdf->SetFont('times', 'B', 14);
         $titleH = $pdf->getStringHeight($contentWidth, $titleObj);
 
-        $pdf->SetFont('times', 'B', 12);
-        $authorH = $pdf->getStringHeight($contentWidth, $authorObj);
-
-        $pdf->SetFont('times', 'I', 10);
-        $affiliationH = empty($affiliationObj) ? 0 : $pdf->getStringHeight($contentWidth, $affiliationObj);
+        $authorsH = 0;
+        foreach ($authorsData as $author) {
+            $pdf->SetFont('times', 'B', 12);
+            $authorsH += $pdf->getStringHeight($contentWidth, $author['name']);
+            if (!empty($author['affiliation'])) {
+                $pdf->SetFont('times', 'I', 10);
+                $authorsH += $pdf->getStringHeight($contentWidth, $author['affiliation']) + 1;
+            }
+            $authorsH += 1; // Gap between authors
+        }
+        $authorsH -= 1; // Remove last gap
 
         $pdf->SetFont('times', '', 11);
         $abstractH = empty($abstractObj) ? 0 : $pdf->getStringHeight($contentWidth, "Annotatsiya: " . $abstractObj);
@@ -1088,7 +1136,7 @@ class ArticlePdfService
         $padding = 5;
         $gap = 3;
 
-        $totalBlockHeight = $titleH + $gap + $authorH + ($affiliationH ? $gap + $affiliationH : 0) + $gap + $abstractH + ($abstractH ? $gap : 0) + $keywordsH + ($keywordsH ? $gap : 0) + $padding * 2;
+        $totalBlockHeight = $titleH + $gap + $authorsH + $gap + $abstractH + ($abstractH ? $gap : 0) + $keywordsH + ($keywordsH ? $gap : 0) + $padding * 2;
 
         // Umumiy blok uchun juda ochiq primary rang fon
         $veryLightPrimary = [
@@ -1110,27 +1158,32 @@ class ArticlePdfService
         $pdf->SetX($leftMargin);
         $pdf->SetFont('times', 'B', 14);
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->MultiCell($contentWidth, 6, $titleObj, 0, 'C');
+        $pdf->MultiCell($contentWidth, 6, $this->normalizeForPdf($titleObj), 0, 'C');
         $innerY = $pdf->GetY() + $gap;
 
-        // Author
-        $pdf->SetY($innerY);
-        $pdf->SetX($leftMargin);
-        $pdf->SetFont('times', 'B', 12);
-        $pdf->MultiCell($contentWidth, 6, $authorObj, 0, 'C');
-        $innerY = $pdf->GetY();
-
-        // Author Affiliation (Ish joyi / O'qish joyi)
-        if (!empty($affiliationObj)) {
-            $innerY += 1;
+        // Authors
+        foreach ($authorsData as $author) {
             $pdf->SetY($innerY);
             $pdf->SetX($leftMargin);
-            $pdf->SetFont('times', 'I', 10);
-            $pdf->SetTextColor(80, 80, 80);
-            $pdf->MultiCell($contentWidth, 5, $affiliationObj, 0, 'C');
+            $pdf->SetFont('times', 'B', 12);
             $pdf->SetTextColor(0, 0, 0);
+            $pdf->MultiCell($contentWidth, 6, $this->normalizeForPdf($author['name']), 0, 'C');
             $innerY = $pdf->GetY();
+
+            if (!empty($author['affiliation'])) {
+                $innerY += 1;
+                $pdf->SetY($innerY);
+                $pdf->SetX($leftMargin);
+                $pdf->SetFont('times', 'I', 10);
+                $pdf->SetTextColor(80, 80, 80);
+                $pdf->MultiCell($contentWidth, 5, $this->normalizeForPdf($author['affiliation']), 0, 'C');
+                $pdf->SetTextColor(0, 0, 0);
+                $innerY = $pdf->GetY();
+            }
+            $innerY += 1; // Gap between authors
         }
+        $innerY -= 1; // Remove last gap
+        
         $innerY += $gap;
 
         // Abstract - davlat primary rangining ochiq fonida
@@ -1153,8 +1206,8 @@ class ArticlePdfService
             $pdf->SetX($leftMargin + 6);
             $pdf->SetFont('times', '', 11);
             $pdf->SetTextColor(30, 30, 30);
-            $pdf->MultiCell($contentWidth - 6, 5, "Annotatsiya: " . $abstractObj, 0, 'J');
-            $innerY = $pdf->GetY() + $gap + 2;
+            $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $abstractStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf("Annotatsiya: " . $abstractObj));
+            $innerY += $gap + 2;
         }
 
         // Keywords - davlat secondary rangining ochiq fonida
@@ -1177,11 +1230,53 @@ class ArticlePdfService
             $pdf->SetX($leftMargin + 6);
             $pdf->SetFont('times', 'I', 11);
             $pdf->SetTextColor(30, 30, 30);
-            $pdf->MultiCell($contentWidth - 6, 5, "Kalit so'zlar: " . $keywordsObj, 0, 'J');
-            $innerY = $pdf->GetY() + $gap + 2;
+            $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $keywordsStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf("Kalit so'zlar: " . $keywordsObj));
+            $innerY += $gap + 2;
         }
 
         return $innerY + 5; // Return bottom position (5mm gap before content starts)
+    }
+
+    /**
+     * Matnni PDF uchun normalizatsiya qilish
+     * (unicode maxsus belgilarni latin-1 ga o'girish)
+     */
+    private function normalizeForPdf(string $text): string
+    {
+        // O'zbek maxsus apostroflarini standart apostrofga almashtirish
+        $search = [
+            "\xCA\xBB",         // U+02BB MODIFIER LETTER TURNED COMMA (ʻ)
+            "\xCA\xBC",         // U+02BC MODIFIER LETTER APOSTROPHE (ʼ)
+            "\xE2\x80\x98",     // U+2018 LEFT SINGLE QUOTATION MARK (')
+            "\xE2\x80\x99",     // U+2019 RIGHT SINGLE QUOTATION MARK (')
+            "\xCA\xB9",         // U+02B9 MODIFIER LETTER PRIME (ʹ)
+        ];
+        $text = str_replace($search, "'", $text);
+
+        // iconv bilan Latin-1 ga o'girish (o'xshash belgilar bilan almashtirish)
+        $converted = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $text);
+        if ($converted !== false && !empty(trim($converted))) {
+            return $converted;
+        }
+        return $text;
+    }
+
+    /**
+     * Matnni ikki taraflama tekislash (oxirgi satr chapdan tekis)
+     * TCPDF ning MultiCell('J') oxirgi satrni ham cho'zib yuboradi,
+     * shu muammoni hal qilish uchun har bir satrni alohida chizamiz.
+     */
+    private function writeJustifiedText($pdf, float $x, float $startY, float $width, float $lineH, string $text): float
+    {
+        if (empty(trim($text))) return $startY;
+
+        // MultiCell bilan 'J' ishlatamiz, lekin oxirgi satrni cho'zmaslik uchun
+        // matn oxiriga \n qo'shamiz — shunda TCPDF oxirgi ko'rinadigan satrni
+        // "oraliq satr" deb hisoblaydi va uni chapdan tekis qoldiradi.
+        $pdf->SetXY($x, $startY);
+        $pdf->MultiCell($width, $lineH, rtrim($text) . "\n", 0, 'J');
+
+        return $pdf->GetY();
     }
 
     /**

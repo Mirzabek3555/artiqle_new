@@ -197,7 +197,30 @@ class PdfService
         $titleText = mb_strlen($rawTitle) > 160 ? mb_substr($rawTitle, 0, 157) . '...' : $rawTitle;
         $titleFont = $fontBI ?: ($fontB ?: $fontR);
         if ($titleFont) {
-            $cy = $this->gdTextMultiline($pageCanvas, 40, $titleFont, $cNavy, $titleText, $cx, $cy, $maxTextW, 'center', 50) + 30;
+            // Adaptiv shrift o'lchami: sarlavha uzun bo'lsa shrink
+            $titleFontSize = 40;
+            $titleMinSize  = 22;
+            $titleMaxLines = 3;
+            while ($titleFontSize >= $titleMinSize) {
+                $words = explode(' ', $titleText);
+                $tLine = '';
+                $tLines = 0;
+                foreach ($words as $word) {
+                    $test = $tLine ? $tLine . ' ' . $word : $word;
+                    $bbox = imagettfbbox($titleFontSize, 0, $titleFont, $test);
+                    if (abs($bbox[2] - $bbox[0]) > $maxTextW && $tLine) {
+                        $tLines++;
+                        $tLine = $word;
+                    } else {
+                        $tLine = $test;
+                    }
+                }
+                if ($tLine) $tLines++;
+                if ($tLines <= $titleMaxLines) break;
+                $titleFontSize -= 2;
+            }
+            $titleLineH = $titleFontSize + 10;
+            $cy = $this->gdTextMultiline($pageCanvas, $titleFontSize, $titleFont, $cNavy, $titleText, $cx, $cy, $maxTextW, 'center', $titleLineH) + 30;
         }
 
         $countryNameEn = $country->name_en ?? ($country->name ?? 'Country');
