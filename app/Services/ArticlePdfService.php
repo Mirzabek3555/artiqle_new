@@ -678,6 +678,15 @@ class ArticlePdfService
         $article->load(['conference']);
         $conference = $article->conference;
 
+        // To'plamdagi sahifa raqami offsetini hisoblash (page_range: "5-11" → offset = 4)
+        $pageOffset = 0;
+        if (!empty($article->page_range)) {
+            $rangeParts = explode('-', $article->page_range);
+            if (count($rangeParts) >= 1 && is_numeric(trim($rangeParts[0]))) {
+                $pageOffset = (int)trim($rangeParts[0]) - 1; // -1 chunki outputPageCount 1 dan boshlanadi
+            }
+        }
+
         // Asl PDF yo'lini olish
         $basePdfPath = Storage::disk('public')->path($article->pdf_path);
 
@@ -754,7 +763,7 @@ class ArticlePdfService
 
         $this->drawIncopSidebar($pdf, $sidebarWidth, $headerImgPath, $logoPath);
         $this->drawIncopHeader($pdf, $article, $country, $conference, $leftMargin);
-        $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+        $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
 
         // =====================================================
         // QOLGAN SAHIFALAR: Matn davom etadi + Running header
@@ -768,7 +777,7 @@ class ArticlePdfService
 
             $this->drawIncopSidebar($pdf, $sidebarWidth, $headerImgPath, $logoPath);
             $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
-            $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+            $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
         }
 
         // Note: Foydalanilgan adabiyotlar endi HTML tarkibida keladi va Puppeteer tomonidan flow qilinadi.
