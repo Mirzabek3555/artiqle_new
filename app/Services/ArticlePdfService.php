@@ -175,7 +175,7 @@ class ArticlePdfService
             $articleHtml, 
             $basePdfFullPath, 
             (string)ceil($firstPageTopMargin) . 'mm', // First page top margin
-            '22mm', // Subsequent pages top margin (running header size is 20mm + 2mm gap)
+            '30mm', // Subsequent pages top margin (running header ~28mm + 2mm gap)
             '33mm', // Left margin
             '15mm', // Right margin
             '20mm'  // Bottom margin (footer size 17mm + 3mm gap)
@@ -948,19 +948,21 @@ class ArticlePdfService
         $pdf = new Fpdi('P', 'mm', 'A4');
         $pdf->AddPage();
         
-        $currentY = 15; // Starting Y
+        $currentY = 8; // Starting Y
 
-        // 1. Conference Name
-        $pdf->SetFont('helvetica', 'B', 9);
-        $currentY += 5; // Cell height
+        // 1. Conference Name (auto-shrink, 1 line, 13pt bold)
+        $confName = strtoupper($country->conference_name ?? 'INTERNATIONAL SCIENTIFIC CONFERENCES');
+        $pdf->SetFont('helvetica', 'B', 13);
+        $currentY += 6; // Cell height
 
         // 2. Subtitle
-        $pdf->SetFont('helvetica', '', 7);
-        $currentY += 4; // Cell height
+        $pdf->SetFont('helvetica', 'B', 11);
+        $currentY += 5; // Cell height
 
-        // 3. Separator line
-        $currentY += 1; // Gap
-        $currentY += 4; // Padding
+        // 3. Separator line + Date
+        $currentY += 2;  // separator gap
+        $currentY += 6;  // date line (10pt)
+        $currentY += 3;  // gap before article content
 
         // 4. Info Block heights
         $titleObj = strtoupper($article->title);
@@ -1057,31 +1059,46 @@ class ArticlePdfService
             'b' => (int) ($secondaryRgb['b'] + (255 - $secondaryRgb['b']) * 0.82),
         ];
 
-        $currentY = 15;
+        // Navy dark blue for header text
+        $navyR = 30; $navyG = 52; $navyB = 100;
+        $redR  = 180; $redG = 0; $redB = 0;
 
-        // 1. CONFERENCE NAME (Davlat primary rangida, Uppercase, Bold)
+        $currentY = 8;
+
+        // 1. CONFERENCE NAME (navy, Bold, 13pt auto-shrink, 1 line)
         $pdf->SetY($currentY);
         $pdf->SetX($leftMargin);
-        $pdf->SetFont('helvetica', 'B', 9);
-        $pdf->SetTextColor($primaryRgb['r'], $primaryRgb['g'], $primaryRgb['b']);
         $confName = strtoupper($country->conference_name ?? 'INTERNATIONAL SCIENTIFIC CONFERENCES OF MODERN TECHNOLOGIES');
-        $pdf->Cell($contentWidth, 5, $confName, 0, 1, 'C');
+        $confNameFontSize = 13;
+        while ($confNameFontSize >= 8) {
+            $pdf->SetFont('helvetica', 'B', $confNameFontSize);
+            if ($pdf->GetStringWidth($confName) <= $contentWidth) break;
+            $confNameFontSize--;
+        }
+        $pdf->SetTextColor($navyR, $navyG, $navyB);
+        $pdf->Cell($contentWidth, 6, $confName, 0, 1, 'C');
 
-        // 2. Subtitle (Grey, Date, Country)
+        // 2. Subtitle (navy, Bold, 11pt)
         $pdf->SetX($leftMargin);
-        $pdf->SetFont('helvetica', '', 9);
-        $pdf->SetTextColor(100, 100, 100);
-        $confDate = $conference->conference_date ? $conference->conference_date->format('F d, Y') : date('F d, Y');
-        $countryName = $country->name_en ?? $country->name;
-        $pdf->Cell($contentWidth, 5, "International Scientific Conferences • $confDate • $countryName", 0, 1, 'C');
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetTextColor($navyR, $navyG, $navyB);
+        $pdf->Cell($contentWidth, 5, 'International Scientific Conferences', 0, 1, 'C');
 
-        // 3. Separator Line (davlat primary rangida)
-        $currentY = $pdf->GetY() + 1;
-        $pdf->SetDrawColor($primaryRgb['r'], $primaryRgb['g'], $primaryRgb['b']);
-        $pdf->SetLineWidth(0.3);
+        // 3. Separator Line (dark navy)
+        $currentY = $pdf->GetY() + 0.5;
+        $pdf->SetDrawColor($navyR, $navyG, $navyB);
+        $pdf->SetLineWidth(0.5);
         $pdf->Line($leftMargin, $currentY, $pageWidth - 15, $currentY);
 
-        $currentY += 4;
+        // 4. Date line (RED bold)
+        $pdf->SetY($currentY + 1);
+        $pdf->SetX($leftMargin);
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->SetTextColor($redR, $redG, $redB);
+        $confDate = $conference->conference_date ? $conference->conference_date->format('d F Y') : date('d F Y');
+        $pdf->Cell($contentWidth, 6, 'Date: ' . $confDate, 0, 1, 'C');
+
+        $currentY = $pdf->GetY() + 2;
 
         // 4. ARTICLE CONTENT BLOCK (Title, Author, Abstract, Keywords)
         // Davlat bayroq ranglariga asoslangan orqa fon
@@ -1293,37 +1310,58 @@ class ArticlePdfService
      */
     private function drawIncopRunningHeader($pdf, $article, $conference, $leftMargin = 28): float
     {
-        $pageWidth = 210;
+        $pageWidth   = 210;
         $contentWidth = $pageWidth - $leftMargin - 15;
+        // Colors
+        $navyR = 30; $navyG = 52; $navyB = 100;
+        $redR  = 180; $redG = 0; $redB = 0;
 
-        // Running header uchun oq fon maskasi
-        // contentStartOnContinuation (20mm) ga mos ravishda
+        // Conference title (may wrap)
+        $confTitle = mb_strtoupper($conference->title ?? 'INTERNATIONAL SCIENTIFIC CONFERENCE');
+        $pdf->SetFont('helvetica', 'B', 13);
+        $rawTitleH = $pdf->getStringHeight($contentWidth, $confTitle); // real wrapped height
+        $titleH    = min($rawTitleH, 12); // max 2 lines (12mm)
+
+        // Dynamic mask: start(3) + title + subtitle(5) + sep(2) + date(6) + gap(1)
+        $maskH = max(20, (int)ceil(3 + $titleH + 5 + 2 + 6 + 1));
+        $maskH = min($maskH, 28); // cap at 28mm (Puppeteer margin is 30mm)
+
+        // White mask
         $pdf->SetFillColor(255, 255, 255);
-        $pdf->Rect($leftMargin, 0, $pageWidth - $leftMargin, 20, 'F');
+        $pdf->Rect($leftMargin, 0, $pageWidth - $leftMargin, $maskH, 'F');
 
-        $currentY = 8;
-        $pdf->SetY($currentY);
+        // -- Conference name (navy Bold 13pt, max 2 lines) --
+        $pdf->SetY(3);
         $pdf->SetX($leftMargin);
+        $pdf->SetFont('helvetica', 'B', 13);
+        $pdf->SetTextColor($navyR, $navyG, $navyB);
+        $pdf->MultiCell($contentWidth, 6, $confTitle, 0, 'C');
+        // Clamp Y to avoid overflow past maskH
+        if ($pdf->GetY() > ($maskH - 13)) {
+            $pdf->SetY($maskH - 13);
+        }
 
-        // Conference Title and Date
-        $pdf->SetFont('helvetica', 'B', 8);
-        $pdf->SetTextColor(30, 78, 121);
+        // -- Subtitle (navy Bold 11pt) --
+        $pdf->SetX($leftMargin);
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetTextColor($navyR, $navyG, $navyB);
+        $pdf->Cell($contentWidth, 5, 'International Scientific Conferences', 0, 1, 'C');
 
-        $confTitle = mb_strtoupper($conference->title ?? 'International Scientific Conference');
-        if (mb_strlen($confTitle) > 80)
-            $confTitle = mb_substr($confTitle, 0, 80) . '...';
-
-        $date = $conference->conference_date ? $conference->conference_date->format('d.m.Y') : date('d.m.Y');
-
-        $pdf->Cell($contentWidth, 5, "$confTitle • $date", 0, 1, 'C');
-
-        // Line - header tagida ajratuvchi chiziq
-        $y = $pdf->GetY() + 2;
-        $pdf->SetDrawColor(200, 200, 200);
-        $pdf->SetLineWidth(0.3);
+        // -- Separator (dark navy) --
+        $y = $pdf->GetY() + 0.5;
+        $pdf->SetDrawColor($navyR, $navyG, $navyB);
+        $pdf->SetLineWidth(0.5);
         $pdf->Line($leftMargin, $y, $pageWidth - 15, $y);
 
-        return $y + 3; // 3mm gap chiziqdan keyin
+        // -- Date (RED bold 10pt) --
+        $pdf->SetY($y + 1);
+        $pdf->SetX($leftMargin);
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->SetTextColor($redR, $redG, $redB);
+        $date = $conference->conference_date ? $conference->conference_date->format('d F Y') : date('d F Y');
+        $pdf->Cell($contentWidth, 6, 'Date: ' . $date, 0, 1, 'C');
+
+        return $pdf->GetY() + 0.5;
     }
 
     /**

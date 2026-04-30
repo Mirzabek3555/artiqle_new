@@ -90,11 +90,30 @@
             <tr>
                 <td class="toc-cell">
                     <div style="font-weight: bold;">
-                        <?php echo e($article->author_name ?? $article->author_display_name); ?>
+                        <?php echo e(trim($article->author_display_name ?? $article->author_name)); ?>
 
                         <?php if($article->co_authors): ?>
-                            <br><?php echo nl2br(e($article->co_authors)); ?>
+                            <?php
+                                $coLines = array_filter(explode("\n", trim($article->co_authors)));
+                                $prefixes = ['ilmiy rahbar:', 'ilmiy rahbar :', 'scientific advisor:', 'supervisor:'];
+                            ?>
+                            <?php $__currentLoopData = $coLines; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $caLine): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php
+                                    $trimmedLine = trim($caLine);
+                                    // Prefiksni olib tashlab faqat ismni qoldirish
+                                    foreach ($prefixes as $prefix) {
+                                        if (stripos($trimmedLine, $prefix) === 0) {
+                                            $trimmedLine = trim(substr($trimmedLine, strlen($prefix)));
+                                            break;
+                                        }
+                                    }
+                                    $caName = trim(explode(',', $trimmedLine)[0]);
+                                ?>
+                                <?php if($caName): ?>
+                                    <br><?php echo e($caName); ?>
 
+                                <?php endif; ?>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         <?php endif; ?>
                     </div>
                     <div style="text-transform: uppercase; margin-top: 5px;">

@@ -89,9 +89,28 @@
             <tr>
                 <td class="toc-cell">
                     <div style="font-weight: bold;">
-                        {{ $article->author_name ?? $article->author_display_name }}
+                        {{ trim($article->author_display_name ?? $article->author_name) }}
                         @if($article->co_authors)
-                            <br>{!! nl2br(e($article->co_authors)) !!}
+                            @php
+                                $coLines = array_filter(explode("\n", trim($article->co_authors)));
+                                $prefixes = ['ilmiy rahbar:', 'ilmiy rahbar :', 'scientific advisor:', 'supervisor:'];
+                            @endphp
+                            @foreach($coLines as $caLine)
+                                @php
+                                    $trimmedLine = trim($caLine);
+                                    // Prefiksni olib tashlab faqat ismni qoldirish
+                                    foreach ($prefixes as $prefix) {
+                                        if (stripos($trimmedLine, $prefix) === 0) {
+                                            $trimmedLine = trim(substr($trimmedLine, strlen($prefix)));
+                                            break;
+                                        }
+                                    }
+                                    $caName = trim(explode(',', $trimmedLine)[0]);
+                                @endphp
+                                @if($caName)
+                                    <br>{{ $caName }}
+                                @endif
+                            @endforeach
                         @endif
                     </div>
                     <div style="text-transform: uppercase; margin-top: 5px;">
