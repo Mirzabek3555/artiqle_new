@@ -67,9 +67,9 @@ async function generatePdf(inputHtml) {
         }
         
         p {
-            margin-bottom: 6pt;
+            margin-bottom: 0;
             text-align: justify;
-            text-indent: 1.25cm;
+            text-indent: 4mm;
         }
         
         h1, h2, h3, h4 {
@@ -138,23 +138,25 @@ async function generatePdf(inputHtml) {
         }
 
         .references-section {
-            margin-top: 20pt;
+            margin-top: 8pt;
             border-top: 0.5pt solid #ddd;
-            padding-top: 10pt;
+            padding-top: 6pt;
         }
         .references-title {
             text-align: center;
             font-size: 12pt;
-            font-style: italic;
-            margin-bottom: 10pt;
-            text-transform: none;
+            font-style: normal;
+            font-weight: bold;
+            margin-bottom: 6pt;
+            text-transform: uppercase;
         }
         .reference-item {
-            text-align: left !important;
+            text-align: justify !important;
             text-indent: 0 !important;
-            font-size: 10pt;
-            line-height: 1.4;
-            margin-bottom: 4pt;
+            font-size: 12pt;
+            line-height: 1.5;
+            margin-bottom: 2pt;
+            padding-left: 4mm;
         }
     </style>
 </head>
