@@ -69,7 +69,9 @@ class UserController extends Controller
             abort(403);
         }
 
-        return Storage::disk('public')->download($article->pdf_path);
+        // Formatted PDF (overlay + to'plam sahifa raqami) mavjud bo'lsa uni qaytarish
+        $pdfPath = $article->formatted_pdf_path ?? $article->pdf_path;
+        return Storage::disk('public')->download($pdfPath);
     }
 
     /**

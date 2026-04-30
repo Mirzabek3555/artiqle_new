@@ -175,10 +175,10 @@ class ArticlePdfService
             $articleHtml, 
             $basePdfFullPath, 
             (string)ceil($firstPageTopMargin) . 'mm', // First page top margin
-            '30mm', // Subsequent pages top margin (running header ~28mm + 2mm gap)
+            '22mm', // Subsequent pages top margin (running header ~21mm + 1mm gap)
             '33mm', // Left margin
             '15mm', // Right margin
-            '20mm'  // Bottom margin (footer size 17mm + 3mm gap)
+            '15mm'  // Bottom margin (footer ~15mm from bottom)
         );
 
         // 4. Base PDF ni article ga saqlash
@@ -803,8 +803,11 @@ class ArticlePdfService
             gc_collect_cycles();
         }
 
-        // Sahifa sonini yangilash
-        $article->update(['page_count' => $outputPageCount]);
+        // Sahifa sonini va formatted PDF yo'lini yangilash
+        $article->update([
+            'page_count'        => $outputPageCount,
+            'formatted_pdf_path' => $path,
+        ]);
 
         return $path;
     }
@@ -1019,11 +1022,11 @@ class ArticlePdfService
         $pdf->SetFont('times', 'I', 11);
         $keywordsH = empty($keywordsObj) ? 0 : $pdf->getStringHeight($contentWidth - 6, "Kalit so'zlar: " . $keywordsObj) + 4;
 
-        $padding = 5;
+        $padding = 1;
         $gap = 3;
         $totalBlockHeight = $titleH + $gap + $authorsH + $gap 
-                            + ($abstractH ? $abstractH + $gap + 2 : 0) 
-                            + ($keywordsH ? $keywordsH + $gap + 2 : 0) 
+                            + ($abstractH ? $abstractH + $gap : 0) 
+                            + ($keywordsH ? $keywordsH + 1 : 0) 
                             + $padding * 2;
 
         return $currentY + $totalBlockHeight;
@@ -1256,10 +1259,10 @@ class ArticlePdfService
             $pdf->SetFont('times', 'I', 11);
             $pdf->SetTextColor(30, 30, 30);
             $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $keywordsStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf("Kalit so'zlar: " . $keywordsObj));
-            $innerY += $gap + 2;
+            $innerY += 1; // 1mm gap after keywords box
         }
 
-        return $innerY + 5; // Return bottom position (5mm gap before content starts)
+        return $innerY + 1; // 1mm gap before Puppeteer content starts
     }
 
     /**
@@ -1321,9 +1324,9 @@ class ArticlePdfService
         $rawTitleH = $pdf->getStringHeight($contentWidth, $confTitle); // real wrapped height
         $titleH    = min($rawTitleH, 12); // max 2 lines (12mm)
 
-        // Dynamic mask: start(3) + title + subtitle(5) + sep(2) + date(6) + gap(1)
-        $maskH = max(20, (int)ceil(3 + $titleH + 5 + 2 + 6 + 1));
-        $maskH = min($maskH, 28); // cap at 28mm (Puppeteer margin is 30mm)
+        // Dynamic mask: start(3) + title(6) + subtitle(5) + sep(2) + date(5) + gap(0.5) = ~21.5mm
+        $maskH = max(18, (int)ceil(3 + $titleH + 5 + 2 + 5 + 0.5));
+        $maskH = min($maskH, 21); // cap at 21mm (Puppeteer margin is 22mm)
 
         // White mask
         $pdf->SetFillColor(255, 255, 255);
@@ -1369,15 +1372,14 @@ class ArticlePdfService
     private function drawIncopFooter($pdf, $article, $country, $pageNo, $totalPages, $leftMargin = 28): void
     {
         $pageWidth = 210;
-        // Footer maskasi — kichik: faqat sahifa raqami uchun joy
-        // Content 280mm da to'xtaydi, qolgan 17mm footer uchun
-        $footerMaskStart = 280; // outBottomLimit bilan ANIQ mos
-        $footerMaskHeight = 297 - $footerMaskStart; // 17mm
+        // Footer maskasi — pastki 15mm ni yopish
+        $footerMaskStart = 282; // content 282mm da to'xtaydi
+        $footerMaskHeight = 297 - $footerMaskStart; // 15mm
         $pdf->SetFillColor(255, 255, 255);
         $pdf->Rect(0, $footerMaskStart, $pageWidth, $footerMaskHeight, 'F');
 
-        // Sahifa raqami - pastga surilgan, markazda
-        $pdf->SetY(290);
+        // Sahifa raqami — markazda, pastga yaqin
+        $pdf->SetY(287);
         $pdf->SetX($leftMargin);
         $pdf->SetFont('helvetica', '', 9);
         $pdf->SetTextColor(120, 120, 120);
@@ -2156,6 +2158,24 @@ class ArticlePdfService
                     }
                 } catch (\Exception $e) {
                     \Log::warning("Sahifa hisoblash xatoligi (Article ID: {$article->id}): " . $e->getMessage());
+                }
+            }
+        }
+
+        // ========================================================
+        // Barcha maqolalar uchun formatted PDF ni YANGI page_range
+        // bilan qayta yaratish (to'g'ri sahifa raqamlari uchun)
+        // ========================================================
+        $country = $conference->country;
+        if ($country) {
+            foreach ($conference->articles as $article) {
+                try {
+                    $basePath = Storage::disk('public')->path($article->pdf_path ?? '');
+                    if (!empty($article->pdf_path) && file_exists($basePath)) {
+                        $this->mergeWithCoverPage($article, $country);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Formatted PDF regeneration error (Article {$article->id}): " . $e->getMessage());
                 }
             }
         }

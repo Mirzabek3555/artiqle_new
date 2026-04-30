@@ -20,7 +20,7 @@
         body {
             font-family: 'DejaVu Serif', 'Times New Roman', Georgia, serif;
             font-size: 9pt;
-            line-height: 1.35;
+            line-height: 1.1;
             color: #000000;
             background: #ffffff;
         }
@@ -130,7 +130,7 @@
             font-weight: 700;
             color: #000000;
             text-transform: uppercase;
-            line-height: 1.25;
+            line-height: 1.1;
             margin-bottom: 3mm;
             text-align: center;
         }
@@ -187,7 +187,7 @@
 
         /* ===== ABSTRACT & KEYWORDS ===== */
         .abstract-section {
-            margin-bottom: 3mm;
+            margin-bottom: 1mm;
         }
 
         .section-label {
@@ -200,14 +200,14 @@
 
         .abstract-text {
             font-size: 8.5pt;
-            line-height: 1.3;
+            line-height: 1.1;
             text-align: justify;
             color: #000000;
         }
 
         .keywords-section {
-            margin-bottom: 4mm;
-            padding-bottom: 3mm;
+            margin-bottom: 1mm;
+            padding-bottom: 2mm;
             border-bottom: 0.3pt solid #cccccc;
         }
 
@@ -226,7 +226,7 @@
 
         /* ===== MAIN CONTENT SECTIONS ===== */
         .content-section {
-            margin-bottom: 3mm;
+            margin-bottom: 0;
         }
 
         .section-title {
@@ -244,15 +244,14 @@
 
         .section-text {
             font-size: 9pt;
-            line-height: 1.35;
+            line-height: 1.0;
             text-align: justify;
         }
 
         .section-text p {
-            margin-bottom: 2mm;
+            margin-bottom: 0;
             text-indent: 4mm;
             page-break-inside: auto;
-            /* Yozuvlar bo'linganda o'ta yopishib qolmaslik yoki bitta qator bo'lib oxiriga sig'may qolishni oldini olish (DomPDF rule) */
             orphans: 3;
             widows: 3;
         }
@@ -279,7 +278,7 @@
 
         .reference-item {
             font-size: 7.5pt;
-            line-height: 1.3;
+            line-height: 1.1;
             margin-bottom: 1mm;
             padding-left: 4mm;
             text-indent: -4mm;
@@ -362,7 +361,7 @@
         .docx-content h4 { font-size: 8.5pt; }
 
         .docx-content p {
-            margin-bottom: 2mm;
+            margin-bottom: 0;
             text-indent: 4mm;
             text-align: justify;
             page-break-inside: auto;
