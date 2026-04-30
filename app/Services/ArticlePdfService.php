@@ -1006,7 +1006,7 @@ class ArticlePdfService
             $pdf->SetFont('times', 'B', 12);
             $authorsH += $pdf->getStringHeight($contentWidth, $author['name']);
             if (!empty($author['affiliation'])) {
-                $pdf->SetFont('times', 'I', 10);
+                $pdf->SetFont('times', 'B', 12);
                 $authorsH += $pdf->getStringHeight($contentWidth, $author['affiliation']) + 1;
             }
             $authorsH += 1; // Gap between authors
@@ -1200,10 +1200,9 @@ class ArticlePdfService
                 $innerY += 1;
                 $pdf->SetY($innerY);
                 $pdf->SetX($leftMargin);
-                $pdf->SetFont('times', 'I', 10);
-                $pdf->SetTextColor(80, 80, 80);
-                $pdf->MultiCell($contentWidth, 5, $this->normalizeForPdf($author['affiliation']), 0, 'C');
+                $pdf->SetFont('times', 'B', 12);
                 $pdf->SetTextColor(0, 0, 0);
+                $pdf->MultiCell($contentWidth, 6, $this->normalizeForPdf($author['affiliation']), 0, 'C');
                 $innerY = $pdf->GetY();
             }
             $innerY += 1; // Gap between authors
