@@ -219,9 +219,9 @@
         }
 
         .keywords-text {
-            font-size: 8pt;
-            font-style: italic;
-            color: #333333;
+            font-size: 9pt;
+            font-style: normal;
+            color: #000000;
         }
 
         /* ===== MAIN CONTENT SECTIONS ===== */
@@ -262,32 +262,49 @@
 
         /* ===== REFERENCES ===== */
         .references-section {
-            margin-top: 4mm;
-            padding-top: 3mm;
+            margin-top: 2mm;
+            padding-top: 2mm;
             border-top: 0.3pt solid #cccccc;
+            font-family: 'DejaVu Serif', 'Times New Roman', serif !important;
+            font-size: 9pt !important;
+            font-style: normal !important;
         }
 
         .references-title {
-            font-family: 'DejaVu Sans', sans-serif;
+            font-family: 'DejaVu Serif', 'Times New Roman', serif;
             font-size: 9pt;
             font-weight: 700;
+            font-style: normal;
             color: #000000;
             text-transform: uppercase;
-            margin-bottom: 2mm;
+            margin-bottom: 1mm;
         }
 
         .reference-item {
-            font-size: 7.5pt;
-            line-height: 1.1;
+            font-family: 'DejaVu Serif', 'Times New Roman', Georgia, serif !important;
+            font-size: 16pt !important;
+            font-style: normal !important;
+            font-weight: normal !important;
+            line-height: 1.2;
             margin-bottom: 1mm;
             padding-left: 4mm;
             text-indent: -4mm;
             text-align: justify;
+            color: #000000 !important;
+        }
+
+        /* Reference ichidagi barcha span/b/i/strong larni ham normalizatsiya */
+        .references-section *:not(.references-title) {
+            font-family: 'DejaVu Serif', 'Times New Roman', Georgia, serif !important;
+            font-size: 16pt !important;
+            font-style: normal !important;
+            font-weight: normal !important;
+            color: #000000 !important;
         }
 
         .ref-number {
-            font-weight: 600;
-            color: #1a5276;
+            font-weight: 400;
+            color: #000000;
         }
 
         /* ===== FOOTER ===== */
@@ -359,6 +376,16 @@
         .docx-content h2 { font-size: 10pt; }
         .docx-content h3 { font-size: 9pt; }
         .docx-content h4 { font-size: 8.5pt; }
+
+        /* DOCX ichidagi WORD inline stillarini bekor qilish - faqat font-style */
+        .docx-content p,
+        .docx-content span,
+        .docx-content div,
+        .docx-content li {
+            font-family: 'DejaVu Serif', 'Times New Roman', serif !important;
+            font-style: normal !important;
+            color: #000000 !important;
+        }
 
         .docx-content p {
             margin-bottom: 0;

@@ -1242,7 +1242,7 @@ class ArticlePdfService
         if (!empty($keywordsObj)) {
             $keywordsStartY = $innerY;
             // Kalit so'zlar uchun oldindan balandlikni hisoblash
-            $pdf->SetFont('times', 'I', 11);
+            $pdf->SetFont('times', '', 11);
             $tempKeywordsH = $pdf->getStringHeight($contentWidth - 6, "Kalit so'zlar: " . $keywordsObj);
             $keywordsBoxH = $tempKeywordsH + 4; // 2mm yuqori + 2mm pastki padding
 
@@ -1256,7 +1256,7 @@ class ArticlePdfService
 
             $pdf->SetY($keywordsStartY + 2);
             $pdf->SetX($leftMargin + 6);
-            $pdf->SetFont('times', 'I', 11);
+            $pdf->SetFont('times', '', 11);
             $pdf->SetTextColor(30, 30, 30);
             $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $keywordsStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf("Kalit so'zlar: " . $keywordsObj));
             $innerY += 1; // 1mm gap after keywords box
@@ -1332,22 +1332,24 @@ class ArticlePdfService
         $pdf->SetFillColor(255, 255, 255);
         $pdf->Rect($leftMargin, 0, $pageWidth - $leftMargin, $maskH, 'F');
 
-        // -- Conference name (navy Bold 13pt, max 2 lines) --
+        // -- Conference name: auto-size to fit in 1 line (no overlap with subtitle) --
+        $titleFontSize = 12;
+        $pdf->SetFont('helvetica', 'B', $titleFontSize);
+        // Reduce font until title fits in single line (height <= 6mm)
+        while ($titleFontSize > 7.5 && $pdf->getStringHeight($contentWidth, $confTitle) > 6) {
+            $titleFontSize -= 0.5;
+            $pdf->SetFont('helvetica', 'B', $titleFontSize);
+        }
         $pdf->SetY(3);
         $pdf->SetX($leftMargin);
-        $pdf->SetFont('helvetica', 'B', 13);
         $pdf->SetTextColor($navyR, $navyG, $navyB);
         $pdf->MultiCell($contentWidth, 6, $confTitle, 0, 'C');
-        // Clamp Y to avoid overflow past maskH
-        if ($pdf->GetY() > ($maskH - 13)) {
-            $pdf->SetY($maskH - 13);
-        }
 
-        // -- Subtitle (navy Bold 11pt) --
+        // -- Subtitle (navy Bold 10pt) --
         $pdf->SetX($leftMargin);
-        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetFont('helvetica', 'B', 10);
         $pdf->SetTextColor($navyR, $navyG, $navyB);
-        $pdf->Cell($contentWidth, 5, 'International Scientific Conferences', 0, 1, 'C');
+        $pdf->Cell($contentWidth, 4.5, 'International Scientific Conferences', 0, 1, 'C');
 
         // -- Separator (dark navy) --
         $y = $pdf->GetY() + 0.5;
