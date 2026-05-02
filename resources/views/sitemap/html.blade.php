@@ -70,7 +70,7 @@
                                                 @foreach($conference->articles as $article)
                                                     <li class="mb-2">
                                                         <i class="bi bi-file-earmark-text me-2 text-muted"></i>
-                                                        <a href="{{ route('article.show', $article) }}" class="text-decoration-none">
+                                                        <a href="{{ $article->url }}" class="text-decoration-none">
                                                             {{ Str::limit($article->title, 80) }}
                                                         </a>
                                                         <small class="text-muted">

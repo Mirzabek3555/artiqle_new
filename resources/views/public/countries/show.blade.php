@@ -77,7 +77,7 @@
                         @forelse($articles as $article)
                             <div class="article-item py-3 {{ !$loop->last ? 'border-bottom' : '' }}">
                                 <h4 class="article-title">
-                                    <a href="{{ route('article.show', $article) }}">
+                                    <a href="{{ $article->url }}">
                                         {{ strtoupper($article->title) }}
                                     </a>
                                 </h4>

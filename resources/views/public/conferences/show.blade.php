@@ -102,7 +102,7 @@
                                 </div>
                                 <div class="col">
                                     <h5 class="mb-1">
-                                        <a href="{{ route('article.show', $article) }}" class="article-title">
+                                        <a href="{{ $article->url }}" class="article-title">
                                             {{ $article->title }}
                                         </a>
                                     </h5>
@@ -118,7 +118,7 @@
                                     </p>
                                 </div>
                                 <div class="col-auto">
-                                    <a href="{{ route('article.show', $article) }}" class="btn-view">
+                                    <a href="{{ $article->url }}" class="btn-view">
                                         <i class="bi bi-eye me-1"></i>Ko'rish
                                     </a>
                                 </div>

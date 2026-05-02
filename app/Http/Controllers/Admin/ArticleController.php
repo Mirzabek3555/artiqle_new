@@ -199,9 +199,15 @@ class ArticleController extends Controller
         $maxOrder = Article::where('conference_id', $conference->id)->max('order_number');
         $nextOrder = $maxOrder ? $maxOrder + 1 : 1;
 
+        $maxCountryArticleNumber = Article::whereHas('conference', function($query) use ($country) {
+            $query->where('country_id', $country->id);
+        })->max('country_article_number');
+        $nextCountryArticleNumber = $maxCountryArticleNumber ? $maxCountryArticleNumber + 1 : 1;
+
         // Maqolani yaratish
         $article = Article::create([
             'conference_id' => $conference->id,
+            'country_article_number' => $nextCountryArticleNumber,
             'author_name' => $validated['author_name'],
             'author_affiliation' => $validated['author_affiliation'],
             'co_authors' => $validated['co_authors'] ?? null,
@@ -421,8 +427,9 @@ class ArticleController extends Controller
         $article->update([
             'status' => 'published',
             'published_at' => $publishedAt,
-            'article_link' => url("/article/{$article->id}"),
         ]);
+        
+        $article->generateLink();
 
         // Sertifikat yaratish
         $this->certificateService->generate($article);

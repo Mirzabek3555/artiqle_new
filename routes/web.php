@@ -14,7 +14,7 @@ Route::get('/', [PublicController::class , 'home'])->name('home');
 Route::get('/countries', [PublicController::class , 'countries'])->name('countries');
 Route::get('/country/{country}', [PublicController::class , 'country'])->name('country.show');
 Route::get('/conference/{conference}', [PublicController::class , 'conference'])->name('conference.show');
-Route::get('/article/{article}', [PublicController::class , 'article'])->name('article.show');
+Route::get('/article/{countrySlug}/{articleNumber}', [PublicController::class , 'article'])->name('article.show');
 Route::get('/archive', [PublicController::class , 'archive'])->name('archive');
 
 /* |-------------------------------------------------------------------------- | Sitemap Routes (for Google Scholar & SEO) |-------------------------------------------------------------------------- */

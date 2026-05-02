@@ -8,7 +8,7 @@
     {{-- Articles Only Sitemap for Google Scholar --}}
 @foreach($articles as $article)
     <url>
-        <loc>{{ route('article.show', $article) }}</loc>
+        <loc>{{ $article->url }}</loc>
         <lastmod>{{ $article->updated_at->toAtomString() }}</lastmod>
         <changefreq>monthly</changefreq>
         <priority>1.0</priority>

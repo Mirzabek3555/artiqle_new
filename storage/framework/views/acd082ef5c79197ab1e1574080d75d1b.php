@@ -81,7 +81,7 @@
                         <?php $__empty_1 = true; $__currentLoopData = $articles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $article): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <div class="article-item py-3 <?php echo e(!$loop->last ? 'border-bottom' : ''); ?>">
                                 <h4 class="article-title">
-                                    <a href="<?php echo e(route('article.show', $article)); ?>">
+                                    <a href="<?php echo e($article->url); ?>">
                                         <?php echo e(strtoupper($article->title)); ?>
 
                                     </a>

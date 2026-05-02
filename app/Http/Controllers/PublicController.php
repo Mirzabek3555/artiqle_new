@@ -90,8 +90,16 @@ class PublicController extends Controller
     /**
      * Maqola sahifasi
      */
-    public function article(Article $article)
+    public function article($countrySlug, $articleNumber)
     {
+        $article = Article::where('country_article_number', $articleNumber)
+            ->whereHas('conference.country', function ($query) use ($countrySlug) {
+                // To check country slug, we compare with the country name processed similarly
+                // Since we used strtolower(str_replace(' ', '-', name_en ?? name))
+                $query->whereRaw("LOWER(REPLACE(COALESCE(name_en, name), ' ', '-')) = ?", [$countrySlug]);
+            })
+            ->firstOrFail();
+
         if ($article->status !== 'published') {
             abort(404);
         }

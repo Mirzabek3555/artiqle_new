@@ -13,6 +13,7 @@ class Article extends Model
 
     protected $fillable = [
         'conference_id',
+        'country_article_number',
         'author_id',
         'author_name',
         'author_affiliation',
@@ -85,9 +86,24 @@ class Article extends Model
      */
     public function generateLink(): string
     {
-        $link = url("/article/{$this->id}");
+        $countryName = strtolower(str_replace(' ', '-', $this->conference->country->name_en ?? $this->conference->country->name ?? 'international'));
+        $articleNum = $this->country_article_number ?? $this->id;
+        $link = url("/article/{$countryName}/{$articleNum}");
         $this->update(['article_link' => $link]);
         return $link;
+    }
+
+    /**
+     * Get article standard URL
+     */
+    public function getUrlAttribute(): string
+    {
+        if ($this->article_link) {
+            return $this->article_link;
+        }
+        $countryName = strtolower(str_replace(' ', '-', $this->conference->country->name_en ?? $this->conference->country->name ?? 'international'));
+        $articleNum = $this->country_article_number ?? $this->id;
+        return route('article.show', ['countrySlug' => $countryName, 'articleNumber' => $articleNum]);
     }
 
     /**

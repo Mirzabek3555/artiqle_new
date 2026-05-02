@@ -224,7 +224,7 @@ class PdfService
         }
 
         $countryNameEn = $country->name_en ?? ($country->name ?? 'Country');
-        $confTitle     = $conference->title ?? 'International Scientific Conference';
+        $confTitle     = $country->conference_name ?? $conference->title ?? 'International Scientific Conference';
 
         // 4.3.5 "presented at the" va Konferensiya nomi katta harflarda
         if ($fontR && $fontB) {
