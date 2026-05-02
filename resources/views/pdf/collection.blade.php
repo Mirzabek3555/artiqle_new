@@ -810,7 +810,7 @@
                         {{ $article->title }}
                     </div>
                 </td>
-                <td style="text-align: center; vertical-align: top; border: 1px solid #7eaac8; width: 40px; font-weight: bold; padding-top: 6px; color: #000; font-size: 13px;">
+                <td style="text-align: center; vertical-align: top; border: 1px solid #7eaac8; width: 65px; font-weight: bold; padding-top: 6px; color: #000; font-size: 13px; white-space: nowrap;">
                     {{ $article->page_range ?? '—' }}
                 </td>
             </tr>

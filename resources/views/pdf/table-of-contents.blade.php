@@ -63,7 +63,8 @@
             padding: 8px;
             text-align: center;
             vertical-align: top;
-            width: 50px;
+            width: 65px;
+            white-space: nowrap;
             font-weight: bold;
             font-size: 14px;
             color: #000;
