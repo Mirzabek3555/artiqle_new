@@ -72,10 +72,7 @@
 </head>
 
 <body>
-    <div class="date">
-        Date: <?php echo e($conference->conference_date->format('jS F-Y')); ?>
-
-    </div>
+    <!-- Date is drawn by the PDF service header, removed from here to prevent duplication -->
     
     <table class="toc-table">
         <thead>
