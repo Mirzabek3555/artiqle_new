@@ -341,24 +341,41 @@ class PdfService
         }
 
         // ════════════════════════════════════════════════════════════
-        // 6. QR KOD (O'ng pastki burchak)
+        // 6. QR KOD (Chap pastki burchak — oq panel ichida)
         // ════════════════════════════════════════════════════════════
 
-        $qrS = 240;
-        $qrX = $W - $qrS - 60;
-        $qrY = $H - $qrS - 60;
+        $qrS = 220;
+        // Chap pastki burchak: x=80, y dan pastdan 280px yuqorida
+        $qrX = 80;
+        $qrY = $H - $qrS - 50;
 
         try {
-            $qrData = urlencode("https://internationalscientificconferences.org/");
-            $qrPng = @file_get_contents("https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . $qrData);
-            if ($qrPng) {
-                $qi = @imagecreatefromstring($qrPng);
+            // Avval ichki Laravel QR paketini ishlatamiz (serverda tashqi so'rov shart emas)
+            $qrUrl = "https://internationalscientificconferences.org/";
+            $qrPngData = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
+                ->size(300)
+                ->margin(1)
+                ->generate($qrUrl);
+            if ($qrPngData) {
+                $qi = @imagecreatefromstring((string) $qrPngData);
                 if ($qi) {
                     imagecopyresampled($pageCanvas, $qi, $qrX, $qrY, 0, 0, $qrS, $qrS, imagesx($qi), imagesy($qi));
                     imagedestroy($qi);
                 }
             }
         } catch (\Throwable $e) {
+            // Fallback: tashqi API
+            try {
+                $qrData = urlencode("https://internationalscientificconferences.org/");
+                $qrPng = @file_get_contents("https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . $qrData);
+                if ($qrPng) {
+                    $qi = @imagecreatefromstring($qrPng);
+                    if ($qi) {
+                        imagecopyresampled($pageCanvas, $qi, $qrX, $qrY, 0, 0, $qrS, $qrS, imagesx($qi), imagesy($qi));
+                        imagedestroy($qi);
+                    }
+                }
+            } catch (\Throwable $e2) {}
         }
 
         if (count($authorsList) === 1) {
