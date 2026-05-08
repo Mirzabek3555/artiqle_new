@@ -64,10 +64,9 @@
 
                         <div class="mb-3">
                             <label for="keywords" class="form-label">Kalit so'zlar (Keywords)</label>
-                            <input type="text" class="form-control" id="keywords" name="keywords"
-                                value="{{ old('keywords') }}"
-                                placeholder="Masalan: matematik modellashtirish, algoritm, optimallashtirish">
-                            <div class="form-text">Kalit so'zlarni vergul bilan ajrating</div>
+                            <textarea class="form-control" id="keywords" name="keywords" rows="3"
+                                placeholder="Masalan: matematik modellashtirish, algoritm, optimallashtirish">{{ old('keywords') }}</textarea>
+                            <div class="form-text">Kalit so'zlarni kiritib o'ting (turli tillarda ham kiritish mumkin)</div>
                         </div>
 
                         <div class="mb-3">

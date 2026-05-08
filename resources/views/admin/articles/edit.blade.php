@@ -149,6 +149,20 @@
                             <textarea class="form-control" name="abstract" rows="4" 
                                       placeholder="Maqolaning qisqacha mazmuni...">{{ old('abstract', $article->abstract) }}</textarea>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-tags me-1"></i>Kalit so'zlar
+                            </label>
+                            <textarea class="form-control" name="keywords" rows="3" 
+                                      placeholder="Kalit so'zlar">{{ old('keywords', $article->keywords) }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-book me-1"></i>Adabiyotlar (References)
+                            </label>
+                            <textarea class="form-control" name="references" rows="5" 
+                                      placeholder="Foydalanilgan adabiyotlar...">{{ old('references', $article->references) }}</textarea>
+                        </div>
                     </div>
                 </div>
 

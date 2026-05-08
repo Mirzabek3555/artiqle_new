@@ -148,12 +148,18 @@ class ArticlePdfService
 
         // References ni HTML ga qo'shish (Puppeteer buni o'zi flow qiladi)
         if (!empty($article->references)) {
-            $articleHtml .= '<div class="references-section">';
+            $articleHtml .= '<div class="references-section" style="margin-top: 20px;">';
             $rawRefs = explode("\n", $article->references);
+            $isFirstRef = true;
             foreach ($rawRefs as $ref) {
                 $ref = trim($ref);
                 if (!empty($ref)) {
-                    $articleHtml .= '<p class="reference-item">' . htmlspecialchars($ref) . '</p>';
+                    if ($isFirstRef && !preg_match('/^\[?\d+\]?[\.\)]?/', $ref)) {
+                        $articleHtml .= '<h3 style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 10px;">' . htmlspecialchars($ref) . '</h3>';
+                    } else {
+                        $articleHtml .= '<p class="reference-item" style="margin-bottom: 5px; text-align: justify;">' . htmlspecialchars($ref) . '</p>';
+                    }
+                    $isFirstRef = false;
                 }
             }
             $articleHtml .= '</div>';
@@ -600,9 +606,12 @@ class ArticlePdfService
             $pdf->SetX($leftMargin);
 
             // Har bir references qatorni chizish
+            $isFirstRef = true;
             foreach ($referencesLines as $refLine) {
+                $isTitle = $isFirstRef && !preg_match('/^\[?\d+\]?[\.\)]?/', $refLine);
+                
                 // Bu qator uchun kerakli balandlikni hisoblash
-                $pdf->SetFont('freeserif', '', 12);
+                $pdf->SetFont('freeserif', $isTitle ? 'B' : '', 12);
                 $lineHeight = $pdf->getStringHeight($availableWidth, $refLine);
 
                 // Sahifada joy borligini tekshirish
@@ -617,13 +626,21 @@ class ArticlePdfService
                     $outBottomLimit = 280;
                 }
 
-                // References qatorni yozish - Times 12pt (asosiy matn bilan bir xil)
+                // References qatorni yozish
                 $pdf->SetY($currentOutY);
                 $pdf->SetX($leftMargin);
-                $pdf->SetFont('freeserif', '', 12);
+                $pdf->SetFont('freeserif', $isTitle ? 'B' : '', 12);
                 $pdf->SetTextColor(0, 0, 0);
-                $pdf->MultiCell($availableWidth, 5, $refLine, 0, 'J');
-                $currentOutY = $pdf->GetY() + 0.3;
+                
+                if ($isTitle) {
+                    $pdf->MultiCell($availableWidth, 5, $refLine, 0, 'C');
+                    $currentOutY = $pdf->GetY() + 2;
+                } else {
+                    $pdf->MultiCell($availableWidth, 5, $refLine, 0, 'J');
+                    $currentOutY = $pdf->GetY() + 0.3;
+                }
+                
+                $isFirstRef = false;
             }
         }
 
@@ -1228,7 +1245,9 @@ class ArticlePdfService
             $pdf->SetX($leftMargin + 6);
             $pdf->SetFont('freeserif', '', 11);
             $pdf->SetTextColor(30, 30, 30);
-            $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $abstractStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf($abstractObj));
+            $htmlText = $this->formatBoldLabels($this->normalizeForPdf($abstractObj));
+            $pdf->writeHTMLCell($contentWidth - 6, 5, $leftMargin + 6, $abstractStartY + 2, $htmlText, 0, 1, false, true, 'J', true);
+            $innerY = $pdf->GetY();
             $innerY += $gap + 2;
         }
 
@@ -1252,7 +1271,9 @@ class ArticlePdfService
             $pdf->SetX($leftMargin + 6);
             $pdf->SetFont('freeserif', '', 11);
             $pdf->SetTextColor(30, 30, 30);
-            $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $keywordsStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf($keywordsObj));
+            $htmlText = $this->formatBoldLabels($this->normalizeForPdf($keywordsObj));
+            $pdf->writeHTMLCell($contentWidth - 6, 5, $leftMargin + 6, $keywordsStartY + 2, $htmlText, 0, 1, false, true, 'J', true);
+            $innerY = $pdf->GetY();
             $innerY += 1; // 1mm gap after keywords box
         }
 
@@ -1276,6 +1297,31 @@ class ArticlePdfService
         $text = str_replace($search, "'", $text);
 
         return $text;
+    }
+
+    /**
+     * Matndagi tillar bo'yicha yorliqlarni (Annotatsiya., Abstract: va h.k) qalin (bold) qilish.
+     */
+    private function formatBoldLabels(string $text): string
+    {
+        if (empty(trim($text))) return '';
+        
+        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        $lines = explode("\n", str_replace("\r", '', $text));
+        $formatted = [];
+        
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+            
+            if (preg_match('/^([\p{L}\s\'\-]{2,40}[\.\:])\s*(.*)/u', $line, $matches)) {
+                $formatted[] = '<b>' . $matches[1] . '</b> ' . $matches[2];
+            } else {
+                $formatted[] = $line;
+            }
+        }
+        
+        return implode('<br>', $formatted);
     }
 
     /**

@@ -127,7 +127,7 @@ class ArticleController extends Controller
             'co_authors'      => 'nullable|string',
             'title'           => 'required|string|max:500',
             'abstract'        => 'nullable|string',
-            'keywords'        => 'nullable|string|max:500',
+            'keywords'        => 'nullable|string',
             'references'      => 'nullable|string',
             'docx_file'       => 'required|file|mimes:docx,doc|max:20480', // 20MB DOCX
         ];
@@ -291,8 +291,10 @@ class ArticleController extends Controller
             'author_id'       => 'nullable|exists:users,id',
             'author_name'     => 'required|string|max:255',
             'author_affiliation' => 'nullable|string|max:500',
-            'title'           => 'required|string|max:255',
+            'title'           => 'required|string|max:500',
             'abstract'        => 'nullable|string',
+            'keywords'        => 'nullable|string',
+            'references'      => 'nullable|string',
             'docx_file'       => 'nullable|file|mimes:docx,doc|max:20480',
         ]);
 
