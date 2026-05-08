@@ -352,7 +352,7 @@ MAIN CONTENT
                                     </a>
                                     <button type="button" class="btn btn-info btn-lg" onclick="copyArticleLink()"
                                         id="copyLinkBtn">
-                                        <i class="bi bi-link-45deg me-2"></i>Maqola havolasi
+                                        <i class="bi bi-link-45deg me-2"></i>Article Link
                                     </button>
 
                                 </div>
@@ -534,7 +534,7 @@ MAIN CONTENT
                 }, 2000);
             }).catch(err => {
                 // Agar clipboard ishlamasa, prompt yordamida ko'rsatamiz
-                prompt('Maqola havolasi:', articleUrl);
+                prompt('Article Link:', articleUrl);
             });
         }
     </script>

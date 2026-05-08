@@ -95,7 +95,7 @@
 
                         @if($article->article_link)
                             <a href="{{ $article->article_link }}" class="btn btn-outline-primary" target="_blank">
-                                <i class="bi bi-link me-1"></i>Maqola havolasi
+                                <i class="bi bi-link me-1"></i>Article Link
                             </a>
                         @endif
                     </div>
