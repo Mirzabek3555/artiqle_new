@@ -129,7 +129,7 @@
            ============================ */
         .conference-title-block {
             position: absolute;
-            bottom: 40mm;
+            bottom: 58mm;
             left: 0;
             right: 0;
             text-align: center;
@@ -202,8 +202,8 @@
 
         .footer-qr-container img,
         .footer-qr-container svg {
-            width: 120px;
-            height: 120px;
+            width: 80px;
+            height: 80px;
             display: inline-block;
         }
 
