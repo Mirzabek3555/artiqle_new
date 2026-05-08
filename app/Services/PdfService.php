@@ -354,9 +354,9 @@ class PdfService
         // ════════════════════════════════════════════════════════════
 
         $qrS = 220;
-        // O'ng pastki burchak: oq panel (cx=80, maxTextW=1200) ning o'ng chekkasiga taqab qo'yish
-        $qrX = $cx + $maxTextW - $qrS; // ≈ 1060
-        $qrY = $H - $qrS - 50;
+        // O'ng pastki burchak: canvas ning eng o'ng pastki burchagi (rasm o'ng taraf paneli)
+        $qrX = $W - $qrS - 60; // 2480 - 220 - 60 = 2200
+        $qrY = $H - $qrS - 60; // 1754 - 220 - 60 = 1474
 
         try {
             // Avval ichki Laravel QR paketini ishlatamiz (serverda tashqi so'rov shart emas)
