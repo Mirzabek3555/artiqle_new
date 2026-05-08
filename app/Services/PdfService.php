@@ -350,12 +350,12 @@ class PdfService
         }
 
         // ════════════════════════════════════════════════════════════
-        // 6. QR KOD (Chap pastki burchak — oq panel ichida)
+        // 6. QR KOD (O'ng pastki burchak — oq panel ichida)
         // ════════════════════════════════════════════════════════════
 
         $qrS = 220;
-        // Chap pastki burchak: x=80, y dan pastdan 280px yuqorida
-        $qrX = 80;
+        // O'ng pastki burchak: oq panel (cx=80, maxTextW=1200) ning o'ng chekkasiga taqab qo'yish
+        $qrX = $cx + $maxTextW - $qrS; // ≈ 1060
         $qrY = $H - $qrS - 50;
 
         try {
