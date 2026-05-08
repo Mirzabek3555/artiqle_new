@@ -129,7 +129,7 @@
            ============================ */
         .conference-title-block {
             position: absolute;
-            bottom: 58mm;
+            bottom: 46mm;
             left: 0;
             right: 0;
             text-align: center;
