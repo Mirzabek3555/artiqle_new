@@ -136,7 +136,7 @@ class PdfService
 
         // 4. MATNLAR tayyorgarligi — Mualliflarni alohida ajratib olib, tsikl bilan chizamiz
         $authorsList = [];
-        $mainAuthor = mb_convert_case(trim($article->author_name ?? 'Author Name'), MB_CASE_TITLE, 'UTF-8');
+        $mainAuthor = trim($article->author_name ?? 'Author Name');
         if (!empty($mainAuthor)) {
             $authorsList[] = $mainAuthor;
         }
@@ -155,7 +155,7 @@ class PdfService
 
                 // Verguldan oldingi ismini ajratib olamiz (tashkilot shart emas)
                 $nameParts = explode(',', $ca);
-                $caName = mb_convert_case(trim($nameParts[0]), MB_CASE_TITLE, 'UTF-8');
+                $caName = trim($nameParts[0]);
                 if (!empty($caName)) {
                     $authorsList[] = $caName;
                 }

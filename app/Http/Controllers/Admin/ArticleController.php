@@ -447,7 +447,7 @@ class ArticleController extends Controller
     {
         // Mualliflar ro'yxatini shakllantiramiz
         $authorsList = [];
-        $mainAuthor = mb_convert_case(trim($article->author_display_name), MB_CASE_TITLE, 'UTF-8');
+        $mainAuthor = trim($article->author_display_name);
         if (!empty($mainAuthor)) {
             $authorsList[] = $mainAuthor;
         }
@@ -456,7 +456,7 @@ class ArticleController extends Controller
             $coAuthorsRaw = explode("\n", trim($article->co_authors));
             foreach ($coAuthorsRaw as $ca) {
                 $nameParts = explode(',', $ca);
-                $caName = mb_convert_case(trim($nameParts[0]), MB_CASE_TITLE, 'UTF-8');
+                $caName = trim($nameParts[0]);
                 if (!empty($caName)) {
                     $authorsList[] = $caName;
                 }
