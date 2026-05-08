@@ -149,7 +149,6 @@ class ArticlePdfService
         // References ni HTML ga qo'shish (Puppeteer buni o'zi flow qiladi)
         if (!empty($article->references)) {
             $articleHtml .= '<div class="references-section">';
-            $articleHtml .= '<h3 class="references-title">FOYDALANILGAN ADABIYOTLAR:</h3>';
             $rawRefs = explode("\n", $article->references);
             foreach ($rawRefs as $ref) {
                 $ref = trim($ref);
@@ -597,18 +596,13 @@ class ArticlePdfService
                 $outBottomLimit = 280;
             }
 
-            // Sarlavha - MARKAZDA, Bold, Italic (rasmga mos)
             $pdf->SetY($currentOutY);
             $pdf->SetX($leftMargin);
-            $pdf->SetFont('times', 'BI', 12);
-            $pdf->SetTextColor(0, 0, 0);
-            $pdf->Cell($availableWidth, 5, 'FOYDALANILGAN ADABIYOTLAR:', 0, 1, 'C');
-            $currentOutY = $pdf->GetY() + 1;
 
             // Har bir references qatorni chizish
             foreach ($referencesLines as $refLine) {
                 // Bu qator uchun kerakli balandlikni hisoblash
-                $pdf->SetFont('times', '', 12);
+                $pdf->SetFont('freeserif', '', 12);
                 $lineHeight = $pdf->getStringHeight($availableWidth, $refLine);
 
                 // Sahifada joy borligini tekshirish
@@ -626,7 +620,7 @@ class ArticlePdfService
                 // References qatorni yozish - Times 12pt (asosiy matn bilan bir xil)
                 $pdf->SetY($currentOutY);
                 $pdf->SetX($leftMargin);
-                $pdf->SetFont('times', '', 12);
+                $pdf->SetFont('freeserif', '', 12);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->MultiCell($availableWidth, 5, $refLine, 0, 'J');
                 $currentOutY = $pdf->GetY() + 0.3;
@@ -927,7 +921,7 @@ class ArticlePdfService
 
         $pdf->StartTransform();
         $pdf->Rotate(90, 2, $textCenterY); // O'ngroqqa (X=2), Pastroqqa (Y=220)
-        $pdf->SetFont('times', 'B', 30);
+        $pdf->SetFont('freeserif', 'B', 30);
         $pdf->SetTextColor(204, 102, 0); // ORANGE
         $pdf->Text(2, $textCenterY, 'International Scientific Conferences');
         $pdf->StopTransform();
@@ -936,7 +930,7 @@ class ArticlePdfService
         // Asosiy matn o'ngga surilganda, buni ham surish kerak (X=16)
         $pdf->StartTransform();
         $pdf->Rotate(90, 16, $textCenterY);
-        $pdf->SetFont('times', '', 11);
+        $pdf->SetFont('freeserif', '', 11);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->Text(16, $textCenterY, 'Open Access | Scientific online | Conference Proceedings');
         $pdf->StopTransform();
@@ -1001,26 +995,26 @@ class ArticlePdfService
         $abstractObj = strip_tags($article->abstract);
         $keywordsObj = strip_tags($article->keywords);
 
-        $pdf->SetFont('times', 'B', 14);
+        $pdf->SetFont('freeserif', 'B', 14);
         $titleH = $pdf->getStringHeight($contentWidth, $titleObj);
 
         $authorsH = 0;
         foreach ($authorsData as $author) {
-            $pdf->SetFont('times', 'B', 12);
+            $pdf->SetFont('freeserif', 'B', 12);
             $authorsH += $pdf->getStringHeight($contentWidth, $author['name']);
             if (!empty($author['affiliation'])) {
-                $pdf->SetFont('times', 'B', 12);
+                $pdf->SetFont('freeserif', 'B', 12);
                 $authorsH += $pdf->getStringHeight($contentWidth, $author['affiliation']) + 1;
             }
             $authorsH += 1; // Gap between authors
         }
         $authorsH -= 1; // Remove last gap
 
-        $pdf->SetFont('times', '', 11);
-        $abstractH = empty($abstractObj) ? 0 : $pdf->getStringHeight($contentWidth - 6, "Annotatsiya: " . $abstractObj) + 4;
+        $pdf->SetFont('freeserif', '', 11);
+        $abstractH = empty($abstractObj) ? 0 : $pdf->getStringHeight($contentWidth - 6, $abstractObj) + 4;
 
-        $pdf->SetFont('times', 'I', 11);
-        $keywordsH = empty($keywordsObj) ? 0 : $pdf->getStringHeight($contentWidth - 6, "Kalit so'zlar: " . $keywordsObj) + 4;
+        $pdf->SetFont('freeserif', 'I', 11);
+        $keywordsH = empty($keywordsObj) ? 0 : $pdf->getStringHeight($contentWidth - 6, $keywordsObj) + 4;
 
         $padding = 1;
         $gap = 3;
@@ -1141,26 +1135,26 @@ class ArticlePdfService
         $keywordsObj = strip_tags($article->keywords);
 
         // Calculate Heights
-        $pdf->SetFont('times', 'B', 14);
+        $pdf->SetFont('freeserif', 'B', 14);
         $titleH = $pdf->getStringHeight($contentWidth, $titleObj);
 
         $authorsH = 0;
         foreach ($authorsData as $author) {
-            $pdf->SetFont('times', 'B', 12);
+            $pdf->SetFont('freeserif', 'B', 12);
             $authorsH += $pdf->getStringHeight($contentWidth, $author['name']);
             if (!empty($author['affiliation'])) {
-                $pdf->SetFont('times', 'I', 10);
+                $pdf->SetFont('freeserif', 'I', 10);
                 $authorsH += $pdf->getStringHeight($contentWidth, $author['affiliation']) + 1;
             }
             $authorsH += 1; // Gap between authors
         }
         $authorsH -= 1; // Remove last gap
 
-        $pdf->SetFont('times', '', 11);
-        $abstractH = empty($abstractObj) ? 0 : $pdf->getStringHeight($contentWidth, "Annotatsiya: " . $abstractObj);
+        $pdf->SetFont('freeserif', '', 11);
+        $abstractH = empty($abstractObj) ? 0 : $pdf->getStringHeight($contentWidth, $abstractObj);
 
-        $pdf->SetFont('times', 'I', 11);
-        $keywordsH = empty($keywordsObj) ? 0 : $pdf->getStringHeight($contentWidth, "Kalit so'zlar: " . $keywordsObj);
+        $pdf->SetFont('freeserif', 'I', 11);
+        $keywordsH = empty($keywordsObj) ? 0 : $pdf->getStringHeight($contentWidth, $keywordsObj);
 
         $padding = 5;
         $gap = 3;
@@ -1185,7 +1179,7 @@ class ArticlePdfService
         // Title
         $pdf->SetY($innerY);
         $pdf->SetX($leftMargin);
-        $pdf->SetFont('times', 'B', 14);
+        $pdf->SetFont('freeserif', 'B', 14);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->MultiCell($contentWidth, 6, $this->normalizeForPdf($titleObj), 0, 'C');
         $innerY = $pdf->GetY() + $gap;
@@ -1194,7 +1188,7 @@ class ArticlePdfService
         foreach ($authorsData as $author) {
             $pdf->SetY($innerY);
             $pdf->SetX($leftMargin);
-            $pdf->SetFont('times', 'B', 12);
+            $pdf->SetFont('freeserif', 'B', 12);
             $pdf->SetTextColor(0, 0, 0);
             $pdf->MultiCell($contentWidth, 6, $this->normalizeForPdf($author['name']), 0, 'C');
             $innerY = $pdf->GetY();
@@ -1203,7 +1197,7 @@ class ArticlePdfService
                 $innerY += 1;
                 $pdf->SetY($innerY);
                 $pdf->SetX($leftMargin);
-                $pdf->SetFont('times', 'B', 12);
+                $pdf->SetFont('freeserif', 'B', 12);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->MultiCell($contentWidth, 6, $this->normalizeForPdf($author['affiliation']), 0, 'C');
                 $innerY = $pdf->GetY();
@@ -1218,8 +1212,8 @@ class ArticlePdfService
         if (!empty($abstractObj)) {
             $abstractStartY = $innerY;
             // Annotatsiya uchun oldindan balandlikni hisoblash
-            $pdf->SetFont('times', '', 11);
-            $tempAbstractH = $pdf->getStringHeight($contentWidth - 6, "Annotatsiya: " . $abstractObj);
+            $pdf->SetFont('freeserif', '', 11);
+            $tempAbstractH = $pdf->getStringHeight($contentWidth - 6, $abstractObj);
             $abstractBoxH = $tempAbstractH + 4; // 2mm yuqori + 2mm pastki padding
 
             // Annotatsiya orqa foni - davlat primary rangidan kelib chiqib
@@ -1232,9 +1226,9 @@ class ArticlePdfService
 
             $pdf->SetY($abstractStartY + 2);
             $pdf->SetX($leftMargin + 6);
-            $pdf->SetFont('times', '', 11);
+            $pdf->SetFont('freeserif', '', 11);
             $pdf->SetTextColor(30, 30, 30);
-            $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $abstractStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf("Annotatsiya: " . $abstractObj));
+            $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $abstractStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf($abstractObj));
             $innerY += $gap + 2;
         }
 
@@ -1242,8 +1236,8 @@ class ArticlePdfService
         if (!empty($keywordsObj)) {
             $keywordsStartY = $innerY;
             // Kalit so'zlar uchun oldindan balandlikni hisoblash
-            $pdf->SetFont('times', '', 11);
-            $tempKeywordsH = $pdf->getStringHeight($contentWidth - 6, "Kalit so'zlar: " . $keywordsObj);
+            $pdf->SetFont('freeserif', '', 11);
+            $tempKeywordsH = $pdf->getStringHeight($contentWidth - 6, $keywordsObj);
             $keywordsBoxH = $tempKeywordsH + 4; // 2mm yuqori + 2mm pastki padding
 
             // Kalit so'zlar orqa foni - davlat secondary rangidan kelib chiqib
@@ -1256,9 +1250,9 @@ class ArticlePdfService
 
             $pdf->SetY($keywordsStartY + 2);
             $pdf->SetX($leftMargin + 6);
-            $pdf->SetFont('times', '', 11);
+            $pdf->SetFont('freeserif', '', 11);
             $pdf->SetTextColor(30, 30, 30);
-            $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $keywordsStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf("Kalit so'zlar: " . $keywordsObj));
+            $innerY = $this->writeJustifiedText($pdf, $leftMargin + 6, $keywordsStartY + 2, $contentWidth - 6, 5, $this->normalizeForPdf($keywordsObj));
             $innerY += 1; // 1mm gap after keywords box
         }
 
@@ -1281,11 +1275,6 @@ class ArticlePdfService
         ];
         $text = str_replace($search, "'", $text);
 
-        // iconv bilan Latin-1 ga o'girish (o'xshash belgilar bilan almashtirish)
-        $converted = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $text);
-        if ($converted !== false && !empty(trim($converted))) {
-            return $converted;
-        }
         return $text;
     }
 
