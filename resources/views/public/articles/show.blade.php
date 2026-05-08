@@ -523,7 +523,7 @@ MAIN CONTENT
             navigator.clipboard.writeText(articleUrl).then(() => {
                 const btn = document.getElementById('copyLinkBtn');
                 const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Nusxalandi!';
+                btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Copied!';
                 btn.classList.remove('btn-info');
                 btn.classList.add('btn-success');
 
