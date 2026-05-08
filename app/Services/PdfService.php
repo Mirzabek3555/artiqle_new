@@ -144,6 +144,15 @@ class PdfService
         if (!empty($article->co_authors)) {
             $coAuthorsRaw = explode("\n", trim($article->co_authors));
             foreach ($coAuthorsRaw as $ca) {
+                $ca = trim($ca);
+                if (empty($ca)) continue;
+
+                // "Ilmiy Rahbar:", "Scientific Supervisor:" kabi prefikslarni olib tashlash
+                // Agar qatorda ":" bo'lsa va undan oldingi qism faqat so'zlardan iborat bo'lsa — prefiks
+                if (preg_match('/^[^,\d]{1,50}:\s*(.+)$/u', $ca, $prefixMatch)) {
+                    $ca = trim($prefixMatch[1]);
+                }
+
                 // Verguldan oldingi ismini ajratib olamiz (tashkilot shart emas)
                 $nameParts = explode(',', $ca);
                 $caName = mb_convert_case(trim($nameParts[0]), MB_CASE_TITLE, 'UTF-8');
