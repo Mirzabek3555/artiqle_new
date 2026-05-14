@@ -87,7 +87,7 @@
                                         {{ $country->conference_name ?? 'Conference title goes here' }}
                                     </h5>
                                     <p class="text-muted small mb-3">
-                                        {{ $country->name }} ({{ $country->name_en }})
+                                        {{ $country->name_en ?? $country->name }}
                                     </p>
                                     @if($country->conference_description)
                                         <p class="card-text small text-muted mb-3">

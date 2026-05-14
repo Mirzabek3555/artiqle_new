@@ -88,7 +88,8 @@
 
                                     </h5>
                                     <p class="text-muted small mb-3">
-                                        <?php echo e($country->name); ?> (<?php echo e($country->name_en); ?>)
+                                        <?php echo e($country->name_en ?? $country->name); ?>
+
                                     </p>
                                     <?php if($country->conference_description): ?>
                                         <p class="card-text small text-muted mb-3">
