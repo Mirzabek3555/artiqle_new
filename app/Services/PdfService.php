@@ -66,6 +66,7 @@ class PdfService
         $fontBI = file_exists($fd . 'arialbi.ttf') ? $fd . 'arialbi.ttf' : '';
         $fontImpact = file_exists($fd . 'impact.ttf') ? $fd . 'impact.ttf' : $fontB;
         $fontGeorgiaB = file_exists($fd . 'georgiab.ttf') ? $fd . 'georgiab.ttf' : (file_exists($fd . 'timesbd.ttf') ? $fd . 'timesbd.ttf' : $fontB);
+        $fontCursive = file_exists($fd . 'segoesc.ttf') ? $fd . 'segoesc.ttf' : (file_exists($fd . 'pristina.ttf') ? $fd . 'pristina.ttf' : (file_exists($fd . 'timesi.ttf') ? $fd . 'timesi.ttf' : $fontI));
 
         // ════════════════════════════════════════════════════════════
         // 1. ASOSIY FON (Yangi tayyor JPG shabloni yuklash)
@@ -244,12 +245,27 @@ class PdfService
             $cy = $this->gdTextMultiline($pageCanvas, 36, $fontB, $cNavy, $confTitle, $cx, $cy, $maxTextW, 'center', 46) + 30;
         }
         if ($fontR && $fontB) {
+            $editorCodeTemp = strlen($country->code ?? 'GB') === 3 ? substr($country->code ?? 'GB', 0, 2) : ($country->code ?? 'GB');
+            $editorCodeTemp = strtoupper($editorCodeTemp);
+            $capitals = [
+                'UZ' => 'Tashkent', 'GB' => 'London', 'DE' => 'Berlin', 'RU' => 'Moscow',
+                'FR' => 'Paris', 'TR' => 'Ankara', 'JP' => 'Tokyo', 'CN' => 'Beijing',
+                'US' => 'Washington', 'KZ' => 'Astana', 'KR' => 'Seoul', 'IN' => 'New Delhi',
+                'IT' => 'Rome', 'ES' => 'Madrid', 'PL' => 'Warsaw', 'BR' => 'Brasilia',
+                'CA' => 'Ottawa', 'TM' => 'Ashgabat', 'AZ' => 'Baku', 'TJ' => 'Dushanbe',
+                'KG' => 'Bishkek', 'DK' => 'Copenhagen', 'SE' => 'Stockholm', 'NO' => 'Oslo',
+                'FI' => 'Helsinki', 'NL' => 'Amsterdam', 'BE' => 'Brussels', 'CH' => 'Bern',
+                'AT' => 'Vienna', 'PT' => 'Lisbon', 'GR' => 'Athens', 'SA' => 'Riyadh',
+                'AE' => 'Abu Dhabi',
+            ];
+            $capital = $capitals[$editorCodeTemp] ?? 'Capital';
+
             $parts = [
                 ['text' => 'In an International Conference on ', 'font' => $fontR],
                 ['text' => $confTitle . '.', 'font' => $fontB],
                 ['text' => ' Published online with ', 'font' => $fontR],
                 ['text' => 'International scientific conferences of practice', 'font' => $fontB],
-                ['text' => ' publications, Hosted online from ' . $countryNameEn, 'font' => $fontR],
+                ['text' => ' publications, Hosted online from ' . $capital . ', ' . $countryNameEn, 'font' => $fontR],
             ];
             // Har bir qatorni hisoblaymiz — oxirgi qator uchun $cy ni yangilaymiz
             $lineCount = 0;
@@ -344,6 +360,12 @@ class PdfService
             ? ($alpha3map[$countryRawCode] ?? strtoupper(substr($countryRawCode, 0, 2)))
             : $countryRawCode;
         $editorName = $editorNames[$editorCode] ?? 'Prof. Yogendra Mishra';
+
+        // Dinamik imzo chizish (cursive, chap tomonda "Chief editor" tepasida)
+        if ($fontCursive) {
+            $sigName = str_replace('Prof. ', '', $editorName); // "Prof." so'zini olib tashlaymiz
+            $this->gdText($pageCanvas, 36, $fontCursive, $cBlack, $sigName, 80, 1530, 450, 'left');
+        }
 
         if ($fontB) {
             $this->gdText($pageCanvas, 30, $fontB, $cBlack, $editorName, 80, 1690, 600, 'left');
