@@ -584,7 +584,7 @@ class DocxProcessorService
     /**
      * DOCX XML da w:shd (background fill) va w:highlight elementlarini
      * maxsus [[BGSTART:RRGGBB]] ... [[BGEND]] markerlari bilan belgilash.
-     * Mammoth bu markerlarni oddiy matn sifatida o'tkazadi.
+     * Paragraph va Table Cell darajasidagi fons ham o'tkaziladi.
      */
     private function addColorMarkersToXml(string $xml): string
     {
@@ -599,23 +599,94 @@ class DocxProcessorService
             'darkGray'    => '808080', 'lightGray'   => 'C0C0C0',
         ];
 
-        // <w:r> elementlarini topib, ichidagi rang ma'lumotini olish
+        // 1) Paragraph shading (<w:p> darajasidagi orqa fon rangi)
+        $xml = preg_replace_callback(
+            '/<w:p(?:\s[^>]*)?>.*?<\/w:p>/is',
+            function ($matches) {
+                $para = $matches[0];
+                if (preg_match('/<w:pPr[^>]*>.*?<w:shd[^>]+w:fill="([0-9A-Fa-f]{6})"[^>]*\/?>.*?<\/w:pPr>/is', $para, $m)) {
+                    $bgColor = strtoupper($m[1]);
+                    if ($bgColor !== 'FFFFFF' && $bgColor !== 'AUTO' && $bgColor !== '000000') {
+                        $tCount = preg_match_all('/<w:t(\s[^>]*)?>([^<]*)<\/w:t>/i', $para, $tMatches);
+                        if ($tCount > 0) {
+                            $firstT = $tMatches[0][0];
+                            $lastT = $tMatches[0][$tCount - 1];
+
+                            if ($tCount === 1) {
+                                $newT = preg_replace('/(<w:t[^>]*>)(.*?)(<\/w:t>)/i', '$1[[PGBGSTART:' . $bgColor . ']]$2[[PGBGEND]]$3', $firstT);
+                                $para = str_replace($firstT, $newT, $para);
+                            } else {
+                                $newFirstT = preg_replace('/(<w:t[^>]*>)(.*?)(<\/w:t>)/i', '$1[[PGBGSTART:' . $bgColor . ']]$2$3', $firstT);
+                                $newLastT = preg_replace('/(<w:t[^>]*>)(.*?)(<\/w:t>)/i', '$1$2[[PGBGEND]]$3', $lastT);
+
+                                $posFirst = strpos($para, $firstT);
+                                if ($posFirst !== false) {
+                                    $para = substr_replace($para, $newFirstT, $posFirst, strlen($firstT));
+                                }
+                                $posLast = strrpos($para, $lastT);
+                                if ($posLast !== false) {
+                                    $para = substr_replace($para, $newLastT, $posLast, strlen($lastT));
+                                }
+                            }
+                        }
+                    }
+                }
+                return $para;
+            },
+            $xml
+        );
+
+        // 2) Table cell shading (<w:tc> jadval katagi darajasidagi orqa fon rangi)
+        $xml = preg_replace_callback(
+            '/<w:tc(?:\s[^>]*)?>.*?<\/w:tc>/is',
+            function ($matches) {
+                $cell = $matches[0];
+                if (preg_match('/<w:tcPr[^>]*>.*?<w:shd[^>]+w:fill="([0-9A-Fa-f]{6})"[^>]*\/?>.*?<\/w:tcPr>/is', $cell, $m)) {
+                    $bgColor = strtoupper($m[1]);
+                    if ($bgColor !== 'FFFFFF' && $bgColor !== 'AUTO' && $bgColor !== '000000') {
+                        $tCount = preg_match_all('/<w:t(\s[^>]*)?>([^<]*)<\/w:t>/i', $cell, $tMatches);
+                        if ($tCount > 0) {
+                            $firstT = $tMatches[0][0];
+                            $lastT = $tMatches[0][$tCount - 1];
+
+                            if ($tCount === 1) {
+                                $newT = preg_replace('/(<w:t[^>]*>)(.*?)(<\/w:t>)/i', '$1[[TCBGSTART:' . $bgColor . ']]$2[[TCBGEND]]$3', $firstT);
+                                $cell = str_replace($firstT, $newT, $cell);
+                            } else {
+                                $newFirstT = preg_replace('/(<w:t[^>]*>)(.*?)(<\/w:t>)/i', '$1[[TCBGSTART:' . $bgColor . ']]$2$3', $firstT);
+                                $newLastT = preg_replace('/(<w:t[^>]*>)(.*?)(<\/w:t>)/i', '$1$2[[TCBGEND]]$3', $lastT);
+
+                                $posFirst = strpos($cell, $firstT);
+                                if ($posFirst !== false) {
+                                    $cell = substr_replace($cell, $newFirstT, $posFirst, strlen($firstT));
+                                }
+                                $posLast = strrpos($cell, $lastT);
+                                if ($posLast !== false) {
+                                    $cell = substr_replace($cell, $newLastT, $posLast, strlen($lastT));
+                                }
+                            }
+                        }
+                    }
+                }
+                return $cell;
+            },
+            $xml
+        );
+
+        // 3) Run-level shading (<w:r> matn darajasidagi orqa fon va highlight)
         $xml = preg_replace_callback(
             '/<w:r(?:\s[^>]*)?>.*?<\/w:r>/is',
             function ($matches) use ($highlightMap) {
                 $run = $matches[0];
                 $bgColor = null;
 
-                // 1) w:shd fill rengi (paragraf yoki run darajasida)
                 if (preg_match('/<w:shd[^>]+w:fill="([0-9A-Fa-f]{6})"[^>]*\/?>/i', $run, $m)) {
                     $col = strtoupper($m[1]);
-                    // Oq va avtomatik rangni o'tkazib yuboramiz
                     if ($col !== 'FFFFFF' && $col !== 'AUTO' && $col !== '000000') {
                         $bgColor = $col;
                     }
                 }
 
-                // 2) w:highlight (standart Word highlight)
                 if (!$bgColor && preg_match('/<w:highlight[^>]+w:val="([^"]+)"[^>]*\/?>/i', $run, $m)) {
                     $hName = strtolower(trim($m[1]));
                     if ($hName !== 'none' && isset($highlightMap[$hName])) {
@@ -625,7 +696,6 @@ class DocxProcessorService
 
                 if (!$bgColor) return $run;
 
-                // w:t tarkibiga marker qo'shamiz
                 return preg_replace_callback(
                     '/<w:t(\s[^>]*)?>([^<]*)<\/w:t>/i',
                     function ($tm) use ($bgColor) {
@@ -644,16 +714,43 @@ class DocxProcessorService
     }
 
     /**
-     * HTML da [[BGSTART:RRGGBB]]...[[BGEND]] markerlarini
-     * <span style="background-color:#RRGGBB">...</span> ga aylantirish.
+     * HTML da markerlarni CSS background-color ga aylantirish.
      */
     private function convertColorMarkersToHtml(string $html): string
     {
-        return preg_replace(
+        // 1) Paragraph shading
+        $html = preg_replace(
+            '/<p>\[\[PGBGSTART:([0-9A-Fa-f]{6})\]\](.*?)\[\[PGBGEND\]\]<\/p>/is',
+            '<p style="background-color:#$1; padding: 6px 10px; border-radius: 4px; text-indent: 0;">$2</p>',
+            $html
+        );
+
+        // 2) Table cell shading (td elementga style background-color berish)
+        $html = preg_replace_callback(
+            '/<td([^>]*)>(?:\s*<p[^>]*>)?\s*\[\[TCBGSTART:([0-9A-Fa-f]{6})\]\](.*?)\[\[TCBGEND\]\]\s*(?:<\/p>)?\s*<\/td>/is',
+            function ($m) {
+                $attrs = $m[1];
+                $color = $m[2];
+                $content = $m[3];
+                if (preg_match('/style="([^"]*)"/i', $attrs, $sm)) {
+                    $style = rtrim($sm[1], ';') . '; background-color: #' . $color . ';';
+                    $attrs = preg_replace('/style="[^"]*"/i', 'style="' . $style . '"', $attrs);
+                } else {
+                    $attrs .= ' style="background-color: #' . $color . ';"';
+                }
+                return '<td' . $attrs . '>' . $content . '</td>';
+            },
+            $html
+        );
+
+        // 3) Character-level highlight & shading
+        $html = preg_replace(
             '/\[\[BGSTART:([0-9A-Fa-f]{6})\]\](.*?)\[\[BGEND\]\]/s',
             '<span style="background-color:#$1">$2</span>',
             $html
         );
+
+        return $html;
     }
 
     /**

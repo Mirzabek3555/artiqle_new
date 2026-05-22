@@ -59,11 +59,11 @@ class PdfService
         $cBorder = imagecolorallocate($canvas, 180, 180, 180);
 
         // Fontlar
-        $fd = '/usr/share/fonts/truetype/liberation/';
-        $fontR = file_exists($fd . 'LiberationSans-Regular.ttf') ? $fd . 'LiberationSans-Regular.ttf' : '';
-        $fontB = file_exists($fd . 'LiberationSans-Bold.ttf') ? $fd . 'LiberationSans-Bold.ttf' : '';
-        $fontI = file_exists($fd . 'LiberationSans-Italic.ttf') ? $fd . 'LiberationSans-Italic.ttf' : '';
-        $fontBI = file_exists($fd . 'LiberationSans-BoldItalic.ttf') ? $fd . 'LiberationSans-BoldItalic.ttf' : '';
+        $fd = 'C:/Windows/Fonts/';
+        $fontR = file_exists($fd . 'arial.ttf') ? $fd . 'arial.ttf' : '';
+        $fontB = file_exists($fd . 'arialbd.ttf') ? $fd . 'arialbd.ttf' : '';
+        $fontI = file_exists($fd . 'ariali.ttf') ? $fd . 'ariali.ttf' : '';
+        $fontBI = file_exists($fd . 'arialbi.ttf') ? $fd . 'arialbi.ttf' : '';
         $fontImpact = file_exists($fd . 'impact.ttf') ? $fd . 'impact.ttf' : $fontB;
         $fontGeorgiaB = file_exists($fd . 'georgiab.ttf') ? $fd . 'georgiab.ttf' : (file_exists($fd . 'timesbd.ttf') ? $fd . 'timesbd.ttf' : $fontB);
         $fontCursive = file_exists($fd . 'ITCEDSCR.TTF') ? $fd . 'ITCEDSCR.TTF' : (file_exists($fd . 'kunstler.ttf') ? $fd . 'kunstler.ttf' : (file_exists($fd . 'freescpt.ttf') ? $fd . 'freescpt.ttf' : (file_exists($fd . 'segoesc.ttf') ? $fd . 'segoesc.ttf' : (file_exists($fd . 'pristina.ttf') ? $fd . 'pristina.ttf' : $fontI))));
@@ -245,8 +245,22 @@ class PdfService
             $cy = $this->gdTextMultiline($pageCanvas, 36, $fontB, $cNavy, $confTitle, $cx, $cy, $maxTextW, 'center', 46) + 30;
         }
         if ($fontR && $fontB) {
-            $editorCodeTemp = strlen($country->code ?? 'GB') === 3 ? substr($country->code ?? 'GB', 0, 2) : ($country->code ?? 'GB');
-            $editorCodeTemp = strtoupper($editorCodeTemp);
+            $alpha3map = [
+                'UZB' => 'UZ', 'GBR' => 'GB', 'USA' => 'US', 'DEU' => 'DE',
+                'FRA' => 'FR', 'ITA' => 'IT', 'ESP' => 'ES', 'RUS' => 'RU',
+                'JPN' => 'JP', 'CHN' => 'CN', 'KOR' => 'KR', 'TUR' => 'TR',
+                'POL' => 'PL', 'KAZ' => 'KZ', 'IND' => 'IN', 'BRA' => 'BR',
+                'CAN' => 'CA', 'TKM' => 'TM', 'AZE' => 'AZ', 'TJK' => 'TJ', 'KGZ' => 'KG',
+                'DNK' => 'DK', 'SWE' => 'SE', 'NOR' => 'NO', 'FIN' => 'FI',
+                'NLD' => 'NL', 'BEL' => 'BE', 'CHE' => 'CH', 'AUT' => 'AT',
+                'PRT' => 'PT', 'GRC' => 'GR', 'SAU' => 'SA', 'ARE' => 'AE',
+            ];
+
+            $countryRawCode = strtoupper($country->code ?? 'GB');
+            $editorCodeTemp = strlen($countryRawCode) === 3
+                ? ($alpha3map[$countryRawCode] ?? strtoupper(substr($countryRawCode, 0, 2)))
+                : $countryRawCode;
+
             $capitals = [
                 'UZ' => 'Tashkent', 'GB' => 'London', 'DE' => 'Berlin', 'RU' => 'Moscow',
                 'FR' => 'Paris', 'TR' => 'Ankara', 'JP' => 'Tokyo', 'CN' => 'Beijing',
@@ -363,9 +377,10 @@ class PdfService
 
         // ── Imzo bloki (chap pastki, logoga tegmagan holda) ──────────
         // Sertifikat: 2480x1754, oq panel ~x:0-1260
-        // Logo template ichida ~x:350-600, y:1480+ atrofida → imzoni x:80, kengligi max 360px
+        // Logo template ichida ~x:350-600, y:1480+ atrofida → imzoni x:80, kengligi max 280px
         $sigName = str_replace('Prof. ', '', $editorName);
-        $sigBottomY = $this->drawHandwrittenSignature($pageCanvas, $sigName, 80, 1380, $cBlack, 360);
+        $cInkBlue = imagecolorallocate($pageCanvas, 22, 45, 125); // Siyoh rang (rich dark blue)
+        $sigBottomY = $this->drawHandwrittenSignature($pageCanvas, $sigName, 80, 1380, $cInkBlue, 280);
 
         // "Chief editor" — qizil kursiv, imzo tagida
         $cRed = imagecolorallocate($pageCanvas, 180, 20, 20);
@@ -712,7 +727,7 @@ class PdfService
         $hash = abs(crc32($name));
 
         // Imzo uchun shrift tanlash
-        $fd = '/usr/share/fonts/truetype/liberation/';
+        $fd = 'C:/Windows/Fonts/';
         $sp = public_path('fonts/signatures/');
         $candidates = [
             $sp . 'HerrVonMuellerhoff.ttf',
@@ -780,6 +795,12 @@ class PdfService
 
         // ── 3. Asosiy canvasga o'tkazish ─────────────────────────────────
         // Anti-aliasing piksellarini ham o'tkazamiz (threshold: 230 dan past = o'tkaziladi)
+        // Rangni aniqlab blending qilamiz
+        $colorParts = imagecolorsforindex($img, $color);
+        $cr = $colorParts['red'] ?? 0;
+        $cg = $colorParts['green'] ?? 0;
+        $cb = $colorParts['blue'] ?? 0;
+
         $copyW = min($outW, $maxWidth);
         for ($x = 0; $x < $copyW; $x++) {
             for ($y = 0; $y < $tmpH; $y++) {
@@ -787,11 +808,16 @@ class PdfService
                 $r  = ($px >> 16) & 0xFF;
                 // Anti-aliasing piksellarini ham to'liq o'tkazamiz (230 threshold)
                 if ($r < 230) {
-                    // Quyuqlikni saqlaymiz: qancha quyuq bo'lsa shuncha qora
-                    $alpha     = (int)((230 - $r) / 230 * 255);
-                    $darkness  = min(255, (int)($alpha * 1.1));
-                    $light     = max(0, 255 - $darkness);
-                    $drawColor = imagecolorallocate($img, $light, $light, $light);
+                    // Quyuqlikni saqlaymiz: qancha quyuq bo'lsa shuncha rangdor
+                    $alpha = (int)((230 - $r) / 230 * 255);
+                    $alpha = min(255, (int)($alpha * 1.15));
+
+                    // Oq fondan (255, 255, 255) siyoh ranggacha ($cr, $cg, $cb) silliq o'tish
+                    $pr = (int)(255 - ($alpha / 255) * (255 - $cr));
+                    $pg = (int)(255 - ($alpha / 255) * (255 - $cg));
+                    $pb = (int)(255 - ($alpha / 255) * (255 - $cb));
+
+                    $drawColor = imagecolorallocate($img, $pr, $pg, $pb);
                     imagesetpixel($img, $startX + $x, $startY + $y, $drawColor);
                 }
             }
