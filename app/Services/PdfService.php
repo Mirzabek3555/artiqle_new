@@ -66,7 +66,7 @@ class PdfService
         $fontBI = file_exists($fd . 'arialbi.ttf') ? $fd . 'arialbi.ttf' : '';
         $fontImpact = file_exists($fd . 'impact.ttf') ? $fd . 'impact.ttf' : $fontB;
         $fontGeorgiaB = file_exists($fd . 'georgiab.ttf') ? $fd . 'georgiab.ttf' : (file_exists($fd . 'timesbd.ttf') ? $fd . 'timesbd.ttf' : $fontB);
-        $fontCursive = file_exists($fd . 'segoesc.ttf') ? $fd . 'segoesc.ttf' : (file_exists($fd . 'pristina.ttf') ? $fd . 'pristina.ttf' : (file_exists($fd . 'timesi.ttf') ? $fd . 'timesi.ttf' : $fontI));
+        $fontCursive = file_exists($fd . 'ITCEDSCR.TTF') ? $fd . 'ITCEDSCR.TTF' : (file_exists($fd . 'kunstler.ttf') ? $fd . 'kunstler.ttf' : (file_exists($fd . 'freescpt.ttf') ? $fd . 'freescpt.ttf' : (file_exists($fd . 'segoesc.ttf') ? $fd . 'segoesc.ttf' : (file_exists($fd . 'pristina.ttf') ? $fd . 'pristina.ttf' : $fontI))));
 
         // ════════════════════════════════════════════════════════════
         // 1. ASOSIY FON (Yangi tayyor JPG shabloni yuklash)
@@ -361,14 +361,21 @@ class PdfService
             : $countryRawCode;
         $editorName = $editorNames[$editorCode] ?? 'Prof. Yogendra Mishra';
 
-        // Dinamik imzo chizish (cursive, chap tomonda "Chief editor" tepasida)
-        if ($fontCursive) {
-            $sigName = str_replace('Prof. ', '', $editorName); // "Prof." so'zini olib tashlaymiz
-            $this->gdText($pageCanvas, 36, $fontCursive, $cBlack, $sigName, 80, 1530, 450, 'left');
+        // ── Imzo bloki (chap pastki, logoga tegmagan holda) ──────────
+        // Sertifikat: 2480x1754, oq panel ~x:0-1260
+        // Logo template ichida ~x:350-600, y:1480+ atrofida → imzoni x:80, kengligi max 360px
+        $sigName = str_replace('Prof. ', '', $editorName);
+        $sigBottomY = $this->drawHandwrittenSignature($pageCanvas, $sigName, 80, 1380, $cBlack, 360);
+
+        // "Chief editor" — qizil kursiv, imzo tagida
+        $cRed = imagecolorallocate($pageCanvas, 180, 20, 20);
+        if ($fontI) {
+            $this->gdText($pageCanvas, 32, $fontI, $cRed, 'Chief editor', 80, $sigBottomY + 8, 360, 'left');
         }
 
+        // "Prof. Name" — qalin qora, Chief editor tagida
         if ($fontB) {
-            $this->gdText($pageCanvas, 30, $fontB, $cBlack, $editorName, 80, 1690, 600, 'left');
+            $this->gdText($pageCanvas, 30, $fontB, $cBlack, $editorName, 80, $sigBottomY + 60, 460, 'left');
         }
 
         // ════════════════════════════════════════════════════════════
@@ -495,18 +502,18 @@ class PdfService
     // ──────────────────────────────────────────────────────────────
 
     /** Matn chizish (yumaloq) — gorizontal markazlash imkoni bilan */
-    private function gdText($img, int $size, string $font, $color, string $text, int $x, int $y, int $maxW, string $align = 'left'): void
+    private function gdText($img, int $size, string $font, $color, string $text, int $x, int $y, int $maxW, string $align = 'left', int $angle = 0): void
     {
         if (!file_exists($font) || empty($text))
             return;
-        $bbox = imagettfbbox($size, 0, $font, $text);
+        $bbox = imagettfbbox($size, $angle, $font, $text);
         $tw = abs($bbox[2] - $bbox[0]);
         if ($align === 'center') {
             $x = $x + intval(($maxW - $tw) / 2);
         } elseif ($align === 'right') {
             $x = $x + $maxW - $tw;
         }
-        imagettftext($img, $size, 0, $x, $y + $size, $color, $font, $text);
+        imagettftext($img, $size, $angle, $x, $y + $size, $color, $font, $text);
     }
 
     /** Aralash qalin/oddiy fontli ko'p qatorli matn */
@@ -693,6 +700,129 @@ class PdfService
         imagesetthickness($img, $thickness);
         imageline($img, $x, $y, $x + $w, $y, $color);
         imagesetthickness($img, 1);
+    }
+
+    /**
+     * Haqiqiy imzoga o'xshash imzo chizish.
+     * Signature font + shear + ink-spread simulatsiyasi.
+     * @return int  Imzo blokining pastki Y koordinatasi
+     */
+    private function drawHandwrittenSignature($img, string $name, int $startX, int $startY, $color, int $maxWidth = 560): int
+    {
+        $hash = abs(crc32($name));
+
+        // Imzo uchun shrift tanlash
+        $fd = 'C:/Windows/Fonts/';
+        $sp = public_path('fonts/signatures/');
+        $candidates = [
+            $sp . 'HerrVonMuellerhoff.ttf',
+            $sp . 'MrsSaintDelafield.ttf',
+            $sp . 'MrDeHaviland.ttf',
+            $sp . 'Parisienne.ttf',
+            $sp . 'Zeyada.ttf',
+            $fd . 'ITCEDSCR.TTF',
+            $fd . 'freescpt.ttf',
+            $fd . 'segoesc.ttf',
+        ];
+        $available = array_values(array_filter($candidates, 'file_exists'));
+        if (empty($available)) return $startY + 200;
+        $sigFont = $available[$hash % count($available)];
+
+        $isThin   = stripos($sigFont, 'HerrVonMuellerhoff') !== false
+                  || stripos($sigFont, 'MrsSaintDelafield') !== false
+                  || stripos($sigFont, 'MrDeHaviland') !== false;
+        $scale    = $maxWidth / 560;
+        $fontSize = (int)(($isThin ? 140 : 95) * $scale);
+        $tmpH     = (int)(320 * $scale);
+        $tmpW     = 900;
+        $textX    = 20;
+        $textY    = $tmpH - (int)(80 * $scale);
+
+        // ── 1. Vaqtinchalik canvas: matnni INK SPREAD bilan chizish ──────
+        // Haqiqiy qo'l imzosini simulatsiya: bir xil matnni bir necha marta
+        // 1-2 piksel siljitib chizamiz — bu siyohning qog'ozga yoyilishini ifodalaydi
+        $tmp = imagecreatetruecolor($tmpW, $tmpH);
+        $wht = imagecolorallocate($tmp, 255, 255, 255);
+        imagefill($tmp, 0, 0, $wht);
+
+        // Ink layers: har bir qatlam biroz quyuqroq (markazga yaqin joylar quyuq)
+        $inkLayers = [
+            // [dx, dy, darkness 0-255]
+            [0,  0,  255],  // asosiy qatlam — eng quyuq
+            [1,  0,  180],  // o'ng tomonga yoyilish
+            [-1, 0,  180],  // chap tomonga yoyilish
+            [0,  1,  160],  // pastga yoyilish
+            [0, -1,  140],  // tepaga yoyilish
+            [1,  1,  120],  // diagonal yoyilish
+            [-1, 1,  100],
+        ];
+
+        foreach ($inkLayers as [$dx, $dy, $dark]) {
+            $inkColor = imagecolorallocate($tmp, 255 - $dark, 255 - $dark, 255 - $dark);
+            imagettftext($tmp, $fontSize, 0, $textX + $dx, $textY + $dy, $inkColor, $sigFont, $name);
+        }
+
+        $bbox  = imagettfbbox($fontSize, 0, $sigFont, $name);
+        $textW = abs($bbox[2] - $bbox[0]);
+
+        // ── 2. Shear transformatsiyasi (qiyalik effekti) ──────────────────
+        $shear = 0.28;
+        $outW  = $tmpW + (int)($tmpH * $shear) + 20;
+        $out   = imagecreatetruecolor($outW, $tmpH);
+        $wht2  = imagecolorallocate($out, 255, 255, 255);
+        imagefill($out, 0, 0, $wht2);
+        for ($x = 0; $x < $tmpW; $x++) {
+            $dy = (int)(($tmpW - $x) * $shear * $tmpH / $tmpW);
+            $dy = min($dy, $tmpH - 1);
+            imagecopy($out, $tmp, $x, $dy, $x, 0, 1, $tmpH - $dy);
+        }
+        imagedestroy($tmp);
+
+        // ── 3. Asosiy canvasga o'tkazish ─────────────────────────────────
+        // Anti-aliasing piksellarini ham o'tkazamiz (threshold: 230 dan past = o'tkaziladi)
+        $copyW = min($outW, $maxWidth);
+        for ($x = 0; $x < $copyW; $x++) {
+            for ($y = 0; $y < $tmpH; $y++) {
+                $px = imagecolorat($out, $x, $y);
+                $r  = ($px >> 16) & 0xFF;
+                // Anti-aliasing piksellarini ham to'liq o'tkazamiz (230 threshold)
+                if ($r < 230) {
+                    // Quyuqlikni saqlaymiz: qancha quyuq bo'lsa shuncha qora
+                    $alpha     = (int)((230 - $r) / 230 * 255);
+                    $darkness  = min(255, (int)($alpha * 1.1));
+                    $light     = max(0, 255 - $darkness);
+                    $drawColor = imagecolorallocate($img, $light, $light, $light);
+                    imagesetpixel($img, $startX + $x, $startY + $y, $drawColor);
+                }
+            }
+        }
+        imagedestroy($out);
+
+        // ── 4. Nozik pastki underline (real imzo chizig'i) ────────────────
+        $lineY = $startY + $textY + (int)(25 * $scale);
+        $lx1   = $startX + (int)(5 * $scale);
+        $lx2   = $startX + min($copyW - 10, $textW + (int)(50 * $scale)) + ($hash % 25);
+        $ly1   = $lineY + 6;
+        $midX  = (int)(($lx1 * 0.4 + $lx2 * 0.6)); // o'rta emas, 60% ga siljitilgan
+        $midY  = $ly1 + (int)(10 * $scale);
+
+        // Chiziq o'zgaruvchan qalinlikda (boshi ingichka, o'rtasi qalin, uchi ingichka)
+        $lineThick = max(2, (int)(3 * $scale));
+        imagesetthickness($img, $lineThick);
+        $ppx = $lx1; $ppy = $ly1;
+        for ($s = 1; $s <= 60; $s++) {
+            $t   = $s / 60; $mt = 1 - $t;
+            $nx2 = (int)($mt*$mt*$lx1 + 2*$mt*$t*$midX + $t*$t*$lx2);
+            $ny2 = (int)($mt*$mt*$ly1 + 2*$mt*$t*$midY + $t*$t*$ly1);
+            // Boshi va uchi ingichkroq
+            $thick = ($t < 0.15 || $t > 0.85) ? max(1, $lineThick - 1) : $lineThick;
+            imagesetthickness($img, $thick);
+            imageline($img, $ppx, $ppy, $nx2, $ny2, $color);
+            $ppx = $nx2; $ppy = $ny2;
+        }
+        imagesetthickness($img, 1);
+
+        return $startY + $tmpH;
     }
 
     /** To'ldirilgan yumaloq to'rtburchak */

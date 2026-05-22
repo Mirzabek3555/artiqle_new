@@ -60,6 +60,9 @@ class DocxProcessorService
         // 5. HTML ni tozalash va optimallashtirish
         $html = $this->cleanHtml($html);
 
+        // 6. Rang markerlarini CSS span larga aylantirish (w:shd, w:highlight)
+        $html = $this->convertColorMarkersToHtml($html);
+
         // 6. HTML ichidagi broken linked rasmlarni base64 bilan almashtirish
         $html = $this->fixLinkedImagesInHtml($html);
 
@@ -302,8 +305,10 @@ class DocxProcessorService
             $modifiedXml = $documentXml;
 
             // MAMMOTH FIX: Convert floating/wrapped images (<wp:anchor>) to inline (<wp:inline>)
-            // Mammoth by default ignores <wp:anchor>. Renaming them to <wp:inline> allows Mammoth to extract them.
             $modifiedXml = str_replace(['<wp:anchor', '</wp:anchor>'], ['<wp:inline', '</wp:inline>'], $modifiedXml);
+
+            // RANG FIX: w:shd va w:highlight elementlarini maxsus markerlar bilan belgilash
+            $modifiedXml = $this->addColorMarkersToXml($modifiedXml);
 
             // 1. Avval <m:oMathPara> elementlarni topish (display formulalar)
             $modifiedXml = preg_replace_callback(
@@ -574,6 +579,81 @@ class DocxProcessorService
         $html = preg_replace('/\s+style="[^"]*mso-[^"]*"/', '', $html);
 
         return trim($html);
+    }
+
+    /**
+     * DOCX XML da w:shd (background fill) va w:highlight elementlarini
+     * maxsus [[BGSTART:RRGGBB]] ... [[BGEND]] markerlari bilan belgilash.
+     * Mammoth bu markerlarni oddiy matn sifatida o'tkazadi.
+     */
+    private function addColorMarkersToXml(string $xml): string
+    {
+        // Standard Word highlight nomlarini hex rangga moslashtirish
+        $highlightMap = [
+            'yellow'      => 'FFFF00', 'cyan'        => '00FFFF',
+            'magenta'     => 'FF00FF', 'blue'        => '0563C1',
+            'red'         => 'FF0000', 'green'       => '00FF00',
+            'darkBlue'    => '00008B', 'darkCyan'    => '008B8B',
+            'darkGreen'   => '006400', 'darkMagenta' => '8B008B',
+            'darkRed'     => '8B0000', 'darkYellow'  => '808000',
+            'darkGray'    => '808080', 'lightGray'   => 'C0C0C0',
+        ];
+
+        // <w:r> elementlarini topib, ichidagi rang ma'lumotini olish
+        $xml = preg_replace_callback(
+            '/<w:r(?:\s[^>]*)?>.*?<\/w:r>/is',
+            function ($matches) use ($highlightMap) {
+                $run = $matches[0];
+                $bgColor = null;
+
+                // 1) w:shd fill rengi (paragraf yoki run darajasida)
+                if (preg_match('/<w:shd[^>]+w:fill="([0-9A-Fa-f]{6})"[^>]*\/?>/i', $run, $m)) {
+                    $col = strtoupper($m[1]);
+                    // Oq va avtomatik rangni o'tkazib yuboramiz
+                    if ($col !== 'FFFFFF' && $col !== 'AUTO' && $col !== '000000') {
+                        $bgColor = $col;
+                    }
+                }
+
+                // 2) w:highlight (standart Word highlight)
+                if (!$bgColor && preg_match('/<w:highlight[^>]+w:val="([^"]+)"[^>]*\/?>/i', $run, $m)) {
+                    $hName = strtolower(trim($m[1]));
+                    if ($hName !== 'none' && isset($highlightMap[$hName])) {
+                        $bgColor = $highlightMap[$hName];
+                    }
+                }
+
+                if (!$bgColor) return $run;
+
+                // w:t tarkibiga marker qo'shamiz
+                return preg_replace_callback(
+                    '/<w:t(\s[^>]*)?>([^<]*)<\/w:t>/i',
+                    function ($tm) use ($bgColor) {
+                        $attr = $tm[1] ?? '';
+                        $text = $tm[2];
+                        if (trim($text) === '') return $tm[0];
+                        return '<w:t' . $attr . '>[[BGSTART:' . $bgColor . ']]' . $text . '[[BGEND]]</w:t>';
+                    },
+                    $run
+                );
+            },
+            $xml
+        );
+
+        return $xml;
+    }
+
+    /**
+     * HTML da [[BGSTART:RRGGBB]]...[[BGEND]] markerlarini
+     * <span style="background-color:#RRGGBB">...</span> ga aylantirish.
+     */
+    private function convertColorMarkersToHtml(string $html): string
+    {
+        return preg_replace(
+            '/\[\[BGSTART:([0-9A-Fa-f]{6})\]\](.*?)\[\[BGEND\]\]/s',
+            '<span style="background-color:#$1">$2</span>',
+            $html
+        );
     }
 
     /**
