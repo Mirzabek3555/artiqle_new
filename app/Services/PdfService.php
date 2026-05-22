@@ -59,11 +59,11 @@ class PdfService
         $cBorder = imagecolorallocate($canvas, 180, 180, 180);
 
         // Fontlar
-        $fd = 'C:/Windows/Fonts/';
-        $fontR = file_exists($fd . 'arial.ttf') ? $fd . 'arial.ttf' : '';
-        $fontB = file_exists($fd . 'arialbd.ttf') ? $fd . 'arialbd.ttf' : '';
-        $fontI = file_exists($fd . 'ariali.ttf') ? $fd . 'ariali.ttf' : '';
-        $fontBI = file_exists($fd . 'arialbi.ttf') ? $fd . 'arialbi.ttf' : '';
+        $fd = '/usr/share/fonts/truetype/liberation/';
+        $fontR = file_exists($fd . 'LiberationSans-Regular.ttf') ? $fd . 'LiberationSans-Regular.ttf' : '';
+        $fontB = file_exists($fd . 'LiberationSans-Bold.ttf') ? $fd . 'LiberationSans-Bold.ttf' : '';
+        $fontI = file_exists($fd . 'LiberationSans-Italic.ttf') ? $fd . 'LiberationSans-Italic.ttf' : '';
+        $fontBI = file_exists($fd . 'LiberationSans-BoldItalic.ttf') ? $fd . 'LiberationSans-BoldItalic.ttf' : '';
         $fontImpact = file_exists($fd . 'impact.ttf') ? $fd . 'impact.ttf' : $fontB;
         $fontGeorgiaB = file_exists($fd . 'georgiab.ttf') ? $fd . 'georgiab.ttf' : (file_exists($fd . 'timesbd.ttf') ? $fd . 'timesbd.ttf' : $fontB);
         $fontCursive = file_exists($fd . 'ITCEDSCR.TTF') ? $fd . 'ITCEDSCR.TTF' : (file_exists($fd . 'kunstler.ttf') ? $fd . 'kunstler.ttf' : (file_exists($fd . 'freescpt.ttf') ? $fd . 'freescpt.ttf' : (file_exists($fd . 'segoesc.ttf') ? $fd . 'segoesc.ttf' : (file_exists($fd . 'pristina.ttf') ? $fd . 'pristina.ttf' : $fontI))));
@@ -712,7 +712,7 @@ class PdfService
         $hash = abs(crc32($name));
 
         // Imzo uchun shrift tanlash
-        $fd = 'C:/Windows/Fonts/';
+        $fd = '/usr/share/fonts/truetype/liberation/';
         $sp = public_path('fonts/signatures/');
         $candidates = [
             $sp . 'HerrVonMuellerhoff.ttf',

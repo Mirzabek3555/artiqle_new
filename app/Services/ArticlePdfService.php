@@ -237,7 +237,7 @@ class ArticlePdfService
         file_put_contents($tempHtmlPath, $html);
 
         $command = sprintf(
-            '%s %s %s %s %s %s %s %s %s',
+            'sudo -u root %s %s %s %s %s %s %s %s %s',
             escapeshellarg($nodePath),
             escapeshellarg($scriptPath),
             escapeshellarg($outputPath),
@@ -310,7 +310,7 @@ class ArticlePdfService
             return trim($output[0]);
         }
 
-        return 'node';
+        return '/usr/local/bin/node-root';
     }
 
     /**
@@ -2306,61 +2306,43 @@ class ArticlePdfService
         return $path;
     }
 
-    private function renderSimpleHtmlToPdf(string $html, string $outputPath, string $top = '0', string $bottom = '0', string $left = '0', string $right = '0'): void
-    {
-        try {
-            $scriptPath = base_path('scripts' . DIRECTORY_SEPARATOR . 'html-to-pdf.cjs');
-            $nodePath = $this->findNodePath();
-
-            $descriptors = [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ];
-
-            $command = sprintf(
-                '%s %s %s %s %s %s %s',
-                escapeshellarg($nodePath),
-                escapeshellarg($scriptPath),
-                escapeshellarg($outputPath),
-                escapeshellarg($top),
-                escapeshellarg($bottom),
-                escapeshellarg($left),
-                escapeshellarg($right)
-            );
-
-            $process = proc_open($command, $descriptors, $pipes, base_path());
-
-            if (is_resource($process)) {
-                fwrite($pipes[0], $html);
-                fclose($pipes[0]);
-
-                $stdout = stream_get_contents($pipes[1]);
-                fclose($pipes[1]);
-
-                $stderr = stream_get_contents($pipes[2]);
-                fclose($pipes[2]);
-
-                $status = proc_close($process);
-
-                if ($status === 0 && file_exists($outputPath) && filesize($outputPath) > 0) {
-                    \Log::info("Puppeteer muvaffaqiyatli PDF yaratdi (simple): {$outputPath}");
-                    return;
-                }
-                
-                \Log::error("Puppeteer simple failed", ['status' => $status, 'error' => $stderr, 'stdout' => $stdout]);
-            }
-        } catch (\Exception $e) {
-            \Log::error("Puppeteer simple exception: " . $e->getMessage());
-        }
-
-        // Fallback to DomPDF
-        \Log::info("Fallback to DomPDF for simple html...");
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
-        $pdf->setPaper('A4', 'portrait');
-        $pdf->setOption('isFontSubsettingEnabled', true);
-        $pdf->save($outputPath);
+private function renderSimpleHtmlToPdf(string $html, string $outputPath, string $top = '0', string $bottom = '0', string $left = '0', string $right = '0'): void
+{
+    $scriptPath = base_path('scripts' . DIRECTORY_SEPARATOR . 'docx-to-pdf.cjs');
+    $nodePath = $this->findNodePath();
+    $tempHtmlPath = storage_path('app/temp/simple_' . uniqid() . '.html');
+    if (!is_dir(dirname($tempHtmlPath))) {
+        mkdir(dirname($tempHtmlPath), 0755, true);
     }
+    file_put_contents($tempHtmlPath, $html);
+    $command = sprintf(
+        'sudo -u root %s %s %s %s %s %s %s %s %s',
+        escapeshellarg($nodePath),
+        escapeshellarg($scriptPath),
+        escapeshellarg($outputPath),
+        escapeshellarg($top),
+        escapeshellarg($top),
+        escapeshellarg($left),
+        escapeshellarg($right),
+        escapeshellarg($bottom),
+        escapeshellarg($tempHtmlPath)
+    );
+    $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+    $process = proc_open($command, $descriptors, $pipes, base_path());
+    if (is_resource($process)) {
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+        proc_close($process);
+        @unlink($tempHtmlPath);
+        \Log::info('Puppeteer muvaffaqiyatli PDF yaratdi (simple): ' . $outputPath);
+        return;
+    }
+    @unlink($tempHtmlPath);
+    throw new \Exception('PDF yaratishda xatolik');
+}
 
     /**
      * To'plam muqova sahifasi yaratish
@@ -2382,7 +2364,15 @@ class ArticlePdfService
             mkdir($directory, 0755, true);
         }
 
-        $this->renderSimpleHtmlToPdf($html, $path, '0', '0', '0', '0');
+        $scriptPath = base_path('scripts' . DIRECTORY_SEPARATOR . 'cover-to-pdf.cjs');
+	$nodePath = $this->findNodePath();
+	$tempHtmlPath = storage_path('app/temp/cover_' . uniqid() . '.html');
+	file_put_contents($tempHtmlPath, $html);
+	$command = sprintf('sudo -u root %s %s %s %s %s %s %s %s %s', escapeshellarg($nodePath), escapeshellarg($scriptPath), escapeshellarg($path), '0', '0', '0', '0', '0', escapeshellarg($tempHtmlPath));
+	$descriptors = [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']];
+	$process = proc_open($command, $descriptors, $pipes, base_path());
+	if (is_resource($process)) { fclose($pipes[0]); stream_get_contents($pipes[1]); fclose($pipes[1]); stream_get_contents($pipes[2]); fclose($pipes[2]); proc_close($process); }
+	@unlink($tempHtmlPath);
 
         return $path;
     }

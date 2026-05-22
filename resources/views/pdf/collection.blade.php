@@ -347,7 +347,7 @@
             color: {{ $colors['primary'] ?? '#1a3a5f' }};
             text-transform: uppercase;
             letter-spacing: 4px;
-            opacity: 0.18;
+            opacity: 0;
         }
 
         /* Article header */

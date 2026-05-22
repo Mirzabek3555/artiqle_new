@@ -22,6 +22,7 @@
             height: 297mm;
             position: relative;
             background: #ffffff;
+	    margin-top: -8px;
         }
 
         .cover {
