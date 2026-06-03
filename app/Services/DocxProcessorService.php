@@ -40,6 +40,23 @@ class DocxProcessorService
         $embeddedDocxPath = $this->embedLinkedImages($docxPath);
         $workingDocxPath = $embeddedDocxPath ?: $docxPath;
 
+        // 0.1 XML dan rasmlar va jadvallar metadatasini (o'lchamlari, float va chegaralari) olish
+        $imagesMetadata = [];
+        $tablesMetadata = [];
+        try {
+            $zip = new \ZipArchive();
+            if ($zip->open($workingDocxPath) === true) {
+                $originalXml = $zip->getFromName('word/document.xml');
+                $zip->close();
+                if ($originalXml !== false) {
+                    $imagesMetadata = $this->parseImagesMetadata($originalXml);
+                    $tablesMetadata = $this->parseTablesMetadata($originalXml);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('DOCX rasmlar va jadvallar metadatasini olishda xatolik: ' . $e->getMessage());
+        }
+
         // 1. OMML formulalarni DOCX ichidan olish va placeholder qo'yish
         $formulaData = $this->extractFormulasAndCreateModifiedDocx($workingDocxPath);
         $formulas = $formulaData['formulas'];
@@ -65,6 +82,16 @@ class DocxProcessorService
 
         // 6. HTML ichidagi broken linked rasmlarni base64 bilan almashtirish
         $html = $this->fixLinkedImagesInHtml($html);
+
+        // 7. Rasmlarga Word'dagi o'lcham va float uslublarini qo'llash
+        if (!empty($imagesMetadata)) {
+            $html = $this->applyImagesMetadataToHtml($html, $imagesMetadata);
+        }
+
+        // 8. Jadvallarga chegarasiz uslublarni qo'llash
+        if (!empty($tablesMetadata)) {
+            $html = $this->applyTablesMetadataToHtml($html, $tablesMetadata);
+        }
 
         // Vaqtincha fayllarni o'chirish
         if ($modifiedDocxPath && file_exists($modifiedDocxPath)) {
@@ -718,10 +745,22 @@ class DocxProcessorService
      */
     private function convertColorMarkersToHtml(string $html): string
     {
-        // 1) Paragraph shading
-        $html = preg_replace(
-            '/<p>\[\[PGBGSTART:([0-9A-Fa-f]{6})\]\](.*?)\[\[PGBGEND\]\]<\/p>/is',
-            '<p style="background-color:#$1; padding: 6px 10px; border-radius: 4px; text-indent: 0;">$2</p>',
+        // 1) Paragraph shading (robust callback matching to prevent style overrides and handle attributes)
+        $html = preg_replace_callback(
+            '/<p([^>]*)>\s*\[\[PGBGSTART:([0-9A-Fa-f]{6})\]\](.*?)\[\[PGBGEND\]\]\s*<\/p>/is',
+            function ($m) {
+                $attrs = $m[1];
+                $color = $m[2];
+                $content = $m[3];
+                $styleStr = 'background-color: #' . $color . '; padding: 6px 10px; border-radius: 4px; text-indent: 0;';
+                if (preg_match('/style="([^"]*)"/i', $attrs, $sm)) {
+                    $style = rtrim($sm[1], ';') . '; ' . $styleStr;
+                    $attrs = preg_replace('/style="[^"]*"/i', 'style="' . $style . '"', $attrs);
+                } else {
+                    $attrs .= ' style="' . $styleStr . '"';
+                }
+                return '<p' . $attrs . '>' . $content . '</p>';
+            },
             $html
         );
 
@@ -751,6 +790,221 @@ class DocxProcessorService
         );
 
         return $html;
+    }
+
+    /**
+     * XML ichidan barcha rasmlar o'lchamlarini va joylashuvini olish
+     */
+    private function parseImagesMetadata(string $documentXml): array
+    {
+        $imagesInfo = [];
+        if (preg_match_all('/<w:drawing[^>]*>(.*?)<\/w:drawing>/is', $documentXml, $matches)) {
+            foreach ($matches[1] as $drawingContent) {
+                $info = [
+                    'width' => null,
+                    'height' => null,
+                    'float' => null,
+                    'align' => null,
+                    'is_anchor' => false,
+                ];
+
+                // 1. O'lchamlarni olish (cx va cy)
+                $cx = null;
+                $cy = null;
+                if (preg_match('/cx="(\d+)"/i', $drawingContent, $cxM)) {
+                    $cx = (int)$cxM[1];
+                }
+                if (preg_match('/cy="(\d+)"/i', $drawingContent, $cyM)) {
+                    $cy = (int)$cyM[1];
+                }
+
+                if ($cx && $cy) {
+                    // EMU to pixels: cx / 9525
+                    $info['width'] = round($cx / 9525);
+                    $info['height'] = round($cy / 9525);
+                }
+
+                // 2. wp:anchor (floating) ekanligini aniqlash
+                if (preg_match('/<wp:anchor/i', $drawingContent)) {
+                    $info['is_anchor'] = true;
+                    // Sukut bo'yicha float left
+                    $info['float'] = 'left';
+                }
+
+                // 3. Alignment aniqlash (positionH ichidan)
+                if (preg_match('/<wp:positionH[^>]*>.*?<wp:align>([^<]+)<\/wp:align>/is', $drawingContent, $alignM)) {
+                    $align = strtolower(trim($alignM[1]));
+                    if ($align === 'left' || $align === 'right') {
+                        $info['float'] = $align;
+                    } elseif ($align === 'center') {
+                        $info['align'] = 'center';
+                        $info['float'] = null;
+                    }
+                }
+
+                $imagesInfo[] = $info;
+            }
+        }
+        return $imagesInfo;
+    }
+
+    /**
+     * HTML ichidagi <img> teglariga Word'dagi o'lcham va float uslublarini qo'shish
+     */
+    private function applyImagesMetadataToHtml(string $html, array $imagesMetadata): string
+    {
+        if (empty($imagesMetadata)) {
+            return $html;
+        }
+
+        $imgIndex = 0;
+        // is — case-insensitive + dotall
+        return preg_replace_callback(
+            '/<img([^>]*?)src="([^"]+)"([^>]*?)\/?>|<img([^>]*?)src=\'([^\']+)\'([^>]*?)\/?>/is',
+            function ($matches) use ($imagesMetadata, &$imgIndex) {
+                // To'liq mos tushgan img tegi
+                $fullTag = $matches[0];
+                
+                // Agar bu indeksda metadata bo'lsa
+                if (isset($imagesMetadata[$imgIndex])) {
+                    $meta = $imagesMetadata[$imgIndex];
+                    $imgIndex++;
+
+                    $width = $meta['width'];
+                    $height = $meta['height'];
+                    $float = $meta['float'];
+                    $align = $meta['align'];
+
+                    // Agar o'lchamlar juda katta bo'lsa (A4 kengligidan katta), ularni cheklaymiz
+                    // A4 matn maydoni kengligi taxminan 680px
+                    if ($width && $width > 680) {
+                        $ratio = 680 / $width;
+                        $width = 680;
+                        if ($height) {
+                            $height = round($height * $ratio);
+                        }
+                    }
+
+                    // CSS stillarini qurish
+                    $styles = [];
+                    if ($width) {
+                        $styles[] = "width: {$width}px";
+                    }
+                    if ($height) {
+                        $styles[] = "height: {$height}px";
+                    }
+                    if ($float) {
+                        $styles[] = "float: {$float}";
+                        // Floating bo'lganda yonidan chiroyli masofa qoldirish
+                        if ($float === 'left') {
+                            $styles[] = "margin: 4px 12px 4px 0";
+                        } else {
+                            $styles[] = "margin: 4px 0 4px 12px";
+                        }
+                        $styles[] = "display: inline";
+                    } elseif ($align === 'center') {
+                        $styles[] = "display: block";
+                        $styles[] = "margin: 6px auto";
+                    } else {
+                        $styles[] = "display: inline-block";
+                        $styles[] = "margin: 4px";
+                    }
+
+                    $styleStr = implode('; ', $styles);
+
+                    // inline style atributini qo'shish yoki mavjudini yangilash
+                    if (preg_match('/style="([^"]*)"/i', $fullTag, $styleMatch)) {
+                        $existingStyle = rtrim($styleMatch[1], ';');
+                        $newStyle = $existingStyle ? $existingStyle . '; ' . $styleStr : $styleStr;
+                        $fullTag = preg_replace('/style="[^"]*"/i', 'style="' . $newStyle . '"', $fullTag);
+                    } else {
+                        // src dan keyin style qo'shamiz
+                        $fullTag = preg_replace('/<img/i', '<img style="' . $styleStr . '"', $fullTag);
+                    }
+                } else {
+                    $imgIndex++;
+                }
+
+                return $fullTag;
+            },
+            $html
+        );
+    }
+
+    /**
+     * XML ichidan barcha jadvallar chegaralarini (borders) aniqlash
+     */
+    private function parseTablesMetadata(string $documentXml): array
+    {
+        $tablesInfo = [];
+        if (preg_match_all('/<w:tbl[^>]*>(.*?)<\/w:tbl>/is', $documentXml, $matches)) {
+            foreach ($matches[1] as $tblContent) {
+                $hasBorders = true;
+
+                if (preg_match('/<w:tblBorders[^>]*>(.*?)<\/w:tblBorders>/is', $tblContent, $borderMatch)) {
+                    $bordersXml = $borderMatch[1];
+                    preg_match_all('/w:val="([^"]+)"/i', $bordersXml, $valMatches);
+                    if (!empty($valMatches[1])) {
+                        $allNone = true;
+                        foreach ($valMatches[1] as $val) {
+                            $valLower = strtolower($val);
+                            if ($valLower !== 'none' && $valLower !== 'nil') {
+                                $allNone = false;
+                                break;
+                            }
+                        }
+                        if ($allNone) {
+                            $hasBorders = false;
+                        }
+                    }
+                } else {
+                    $hasBorders = false;
+                }
+
+                $tablesInfo[] = [
+                    'has_borders' => $hasBorders
+                ];
+            }
+        }
+        return $tablesInfo;
+    }
+
+    /**
+     * HTML ichidagi <table> teglariga chegarali uslublarni qo'llash
+     * Faqat Word'da aniq chegara belgilangan jadvallarga 'bordered-table' klassi beriladi
+     */
+    private function applyTablesMetadataToHtml(string $html, array $tablesMetadata): string
+    {
+        if (empty($tablesMetadata)) {
+            return $html;
+        }
+
+        $tblIndex = 0;
+        return preg_replace_callback(
+            '/<table([^>]*?)>/is',
+            function ($matches) use ($tablesMetadata, &$tblIndex) {
+                $fullTag = $matches[0];
+
+                if (isset($tablesMetadata[$tblIndex])) {
+                    $meta = $tablesMetadata[$tblIndex];
+                    $tblIndex++;
+
+                    if ($meta['has_borders']) {
+                        if (preg_match('/class="([^"]*)"/i', $fullTag, $classMatch)) {
+                            $newClass = trim($classMatch[1] . ' bordered-table');
+                            $fullTag = preg_replace('/class="[^"]*"/i', 'class="' . $newClass . '"', $fullTag);
+                        } else {
+                            $fullTag = preg_replace('/<table/i', '<table class="bordered-table"', $fullTag);
+                        }
+                    }
+                } else {
+                    $tblIndex++;
+                }
+
+                return $fullTag;
+            },
+            $html
+        );
     }
 
     /**

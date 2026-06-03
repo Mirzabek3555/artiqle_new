@@ -118,6 +118,9 @@ class ArticleController extends Controller
         ini_set('memory_limit', '-1'); // Unlimited memory
         ini_set('max_execution_time', '0');
 
+        // DOCX yoki PDF biri majburiy
+        $uploadType = $request->input('upload_type', 'docx');
+
         $rules = [
             'country_id'      => 'required|exists:countries,id',
             'month_year'      => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
@@ -129,7 +132,8 @@ class ArticleController extends Controller
             'abstract'        => 'nullable|string',
             'keywords'        => 'nullable|string',
             'references'      => 'nullable|string',
-            'docx_file'       => 'required|file|mimes:docx,doc|max:20480', // 20MB DOCX
+            'docx_file'       => ($uploadType === 'docx') ? 'required|file|mimes:docx,doc|max:20480' : 'nullable|file|mimes:docx,doc|max:20480',
+            'pdf_file'        => ($uploadType === 'pdf') ? 'required|file|mimes:pdf|max:51200' : 'nullable|file|mimes:pdf|max:51200',
         ];
 
         $validated = $request->validate($rules);
@@ -162,12 +166,34 @@ class ArticleController extends Controller
         $content = '';
         $basePdfPath = null;
         $docxPath = null;
+        $directPdfPath = null;
         $pageCount = 1;
+
+        // =====================================================
+        // 1-VARIANT: PDF TO'G'RIDAN-TO'G'RI YUKLANGAN
+        // =====================================================
+        if ($request->hasFile('pdf_file') && $uploadType === 'pdf') {
+            try {
+                $directPdfPath = $request->file('pdf_file')->store('articles/pdfs', 'public');
+                $fullPdfPath = Storage::disk('public')->path($directPdfPath);
+
+                // PDF sahifa sonini aniqlash (ixtiyoriy)
+                try {
+                    $pdfContent = file_get_contents($fullPdfPath);
+                    preg_match_all('/\/Page\W/', $pdfContent, $pages);
+                    $pageCount = max(1, count($pages[0]));
+                } catch (\Exception $e) {
+                    $pageCount = 1;
+                }
+            } catch (\Exception $e) {
+                return back()->withErrors(['pdf_file' => 'PDF faylni yuklashda xatolik: ' . $e->getMessage()])->withInput();
+            }
+        }
 
         // =====================================================
         // 2-VARIANT: DOCX YUKLANGAN (FORMULALAR KONVERT QILINADI)
         // =====================================================
-        if ($request->hasFile('docx_file')) {
+        if ($request->hasFile('docx_file') && $uploadType === 'docx') {
             try {
                 $docxPath = $request->file('docx_file')->store('articles/docx', 'public');
                 $fullDocxPath = Storage::disk('public')->path($docxPath);
@@ -224,27 +250,48 @@ class ArticleController extends Controller
         ]);
 
         // =====================================================
-        // DOCX DAN PDF YARATISH (Puppeteer + mergeWithCoverPage)
+        // PDF VARIANT: TO'G'RIDAN-TO'G'RI PDF SAQLASH
         // =====================================================
-        try {
-            \Log::info('Starting DOCX to PDF generation (Puppeteer)', ['article_id' => $article->id]);
-            $startTime = microtime(true);
-
-            $fullDocxPath = Storage::disk('public')->path($docxPath);
-            $formattedPath = $this->articlePdfService->generateFromDocx($fullDocxPath, $article, $country);
-
-            $duration = round(microtime(true) - $startTime, 2);
-            \Log::info('DOCX PDF generation completed', ['article_id' => $article->id, 'duration' => $duration . 's']);
-
-            $article->update([
-                'formatted_pdf_path' => $formattedPath,
-            ]);
+        if ($directPdfPath) {
+            try {
+                \Log::info('Starting Direct PDF merge with Cover Page', ['article_id' => $article->id]);
+                $fullPdfPath = Storage::disk('public')->path($directPdfPath);
+                $formattedPath = $this->articlePdfService->mergeDirectPdfWithCoverPage($article, $country, $fullPdfPath);
+                
+                // Original faylni asl holatida qoldirib, faqat formatted_pdf_path ni yangilaymiz.
+                $article->update([
+                    'pdf_path' => $directPdfPath, // Asl yuklangan faylni pdf_path ga saqlab qo'yamiz (kerak bo'lsa)
+                    'formatted_pdf_path' => $formattedPath,
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Direct PDF merge failed: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'PDF ga dizayn qo\'shishda xatolik: ' . $e->getMessage())->withInput();
+            }
         }
-        catch (\Exception $e) {
-            \Log::error('PDF creation failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return redirect()->back()
-                ->with('error', 'PDF yaratishda xatolik: ' . $e->getMessage())
-                ->withInput();
+        // =====================================================
+        // DOCX VARIANT: DOCX DAN PDF YARATISH
+        // =====================================================
+        elseif ($docxPath) {
+            try {
+                \Log::info('Starting DOCX to PDF generation (Puppeteer)', ['article_id' => $article->id]);
+                $startTime = microtime(true);
+
+                $fullDocxPath = Storage::disk('public')->path($docxPath);
+                $formattedPath = $this->articlePdfService->generateFromDocx($fullDocxPath, $article, $country);
+
+                $duration = round(microtime(true) - $startTime, 2);
+                \Log::info('DOCX PDF generation completed', ['article_id' => $article->id, 'duration' => $duration . 's']);
+
+                $article->update([
+                    'formatted_pdf_path' => $formattedPath,
+                ]);
+            }
+            catch (\Exception $e) {
+                \Log::error('PDF creation failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+                return redirect()->back()
+                    ->with('error', 'PDF yaratishda xatolik: ' . $e->getMessage())
+                    ->withInput();
+            }
         }
 
         // Agar "Saqlash va nashr qilish" bosilgan bo'lsa
@@ -296,7 +343,9 @@ class ArticleController extends Controller
             'keywords'        => 'nullable|string',
             'references'      => 'nullable|string',
             'docx_file'       => 'nullable|file|mimes:docx,doc|max:20480',
+            'pdf_file'        => 'nullable|file|mimes:pdf|max:51200',
         ]);
+        $updateUploadType = $request->input('upload_type', 'docx');
 
         // Davlat uchun konferensiyani topish yoki yaratish
         $country = Country::findOrFail($validated['country_id']);
@@ -321,9 +370,33 @@ class ArticleController extends Controller
         // Konferensiya sanasini yangilash (agar o'zgargan bo'lsa)
         $conference->update(['conference_date' => $conferenceDate]);
 
-        // Agar yangi DOCX fayli yuklansa
-        if ($request->hasFile('docx_file')) {
-            // Eski fayllarni o'chirish (ixtiyoriy, agar saqlamoqchi bo'lsangiz komment qilish mumkin)
+        // =====================================================
+        // PDF TO'G'RIDAN-TO'G'RI YUKLANGAN (TAHRIRLASH)
+        // =====================================================
+        if ($request->hasFile('pdf_file') && $updateUploadType === 'pdf') {
+            if ($article->formatted_pdf_path) {
+                Storage::disk('public')->delete($article->formatted_pdf_path);
+            }
+            $directPdfPath = $request->file('pdf_file')->store('articles/pdfs', 'public');
+            
+            try {
+                \Log::info('Starting Direct PDF merge with Cover Page on update', ['article_id' => $article->id]);
+                $fullPdfPath = Storage::disk('public')->path($directPdfPath);
+                $formattedPath = $this->articlePdfService->mergeDirectPdfWithCoverPage($article, $country, $fullPdfPath);
+                
+                $validated['pdf_path'] = $directPdfPath;
+                $validated['formatted_pdf_path'] = $formattedPath;
+            } catch (\Exception $e) {
+                \Log::error('Direct PDF merge failed on update: ' . $e->getMessage());
+                // Fallback to saving it directly just in case, or ignore formatting if error
+                $validated['formatted_pdf_path'] = $directPdfPath;
+            }
+        }
+        // =====================================================
+        // DOCX YUKLANGAN (TAHRIRLASH)
+        // =====================================================
+        elseif ($request->hasFile('docx_file') && $updateUploadType === 'docx') {
+            // Eski fayllarni o'chirish
             if ($article->pdf_path) {
                 Storage::disk('public')->delete($article->pdf_path);
             }
@@ -334,8 +407,7 @@ class ArticleController extends Controller
             $docxPath = $request->file('docx_file')->store('articles/docx', 'public');
             $fullDocxPath = Storage::disk('public')->path($docxPath);
 
-            // Yangi sahifa soni taxmini (ixtiyoriy, ammo docx dan olish qiyinroq)
-            $pageCount = $article->page_count; 
+            $pageCount = $article->page_count;
             try {
                 $phpWord = \PhpOffice\PhpWord\IOFactory::load($fullDocxPath);
                 $totalText = '';

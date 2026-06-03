@@ -36,8 +36,35 @@
                             style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
                             <h6 class="mb-3"><i class="bi bi-cloud-upload me-2"></i>Hujjat yuklash</h6>
 
+                            <!-- Yuklash turi tanlash -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Yuklash turi</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="upload_type"
+                                            id="upload_type_docx" value="docx" checked
+                                            onchange="toggleUploadType('docx')">
+                                        <label class="form-check-label" for="upload_type_docx">
+                                            <i class="bi bi-file-earmark-word text-primary me-1"></i>
+                                            <strong>Word (DOCX)</strong>
+                                            <small class="text-muted d-block">Oddiy maqolalar</small>
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="upload_type"
+                                            id="upload_type_pdf" value="pdf"
+                                            onchange="toggleUploadType('pdf')">
+                                        <label class="form-check-label" for="upload_type_pdf">
+                                            <i class="bi bi-file-earmark-pdf text-danger me-1"></i>
+                                            <strong>PDF (tayyor)</strong>
+                                            <small class="text-muted d-block">Formulalar, rasmlar, murakkab layout</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- DOCX yuklash -->
-                            <div class="mb-3 p-3 bg-primary bg-opacity-10 border border-primary rounded">
+                            <div id="docx_upload_section" class="mb-3 p-3 bg-primary bg-opacity-10 border border-primary rounded">
                                 <label for="docx_file" class="form-label fw-bold text-primary">
                                     <i class="bi bi-file-earmark-word me-1"></i> DOCX fayl yuklash <span class="text-danger">*</span>
                                 </label>
@@ -49,7 +76,7 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>"
-                                    id="docx_file" name="docx_file" accept=".docx,.doc" required>
+                                    id="docx_file" name="docx_file" accept=".docx,.doc">
                                 <?php $__errorArgs = ['docx_file'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -66,6 +93,40 @@ unset($__errorArgs, $__bag); ?>
                                     <i class="bi bi-file-word me-1"></i><strong>Maqola matni (Word) faylini yuklang.</strong>
                                     Tizim undan matn va formulalarni o'qib PDF yaratadi.
                                     <br><small class="text-muted">Fayl hajmi: maksimum 20MB | Format: .docx, .doc</small>
+                                </div>
+                            </div>
+
+                            <!-- PDF yuklash -->
+                            <div id="pdf_upload_section" class="mb-3 p-3 bg-danger bg-opacity-10 border border-danger rounded" style="display:none;">
+                                <label for="pdf_file" class="form-label fw-bold text-danger">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF fayl yuklash <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control <?php $__errorArgs = ['pdf_file'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                                    id="pdf_file" name="pdf_file" accept=".pdf">
+                                <?php $__errorArgs = ['pdf_file'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                    <div class="invalid-feedback d-block">
+                                        <strong><?php echo e($message); ?></strong>
+                                    </div>
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                                <div class="form-text text-danger">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Tayyor PDF faylni yuklang.</strong>
+                                    Word'da o'zingiz eksport qilgan PDF — rasmlar, formulalar va jadvallar asl ko'rinishda saqlanadi.
+                                    <br><small class="text-muted">Fayl hajmi: maksimum 50MB | Format: .pdf</small>
                                 </div>
                             </div>
                         </div>
@@ -241,4 +302,35 @@ unset($__errorArgs, $__bag); ?>
         </div>
     </div>
 <?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('scripts'); ?>
+<script>
+function toggleUploadType(type) {
+    const docxSection = document.getElementById('docx_upload_section');
+    const pdfSection = document.getElementById('pdf_upload_section');
+    const docxInput = document.getElementById('docx_file');
+    const pdfInput = document.getElementById('pdf_file');
+
+    if (type === 'pdf') {
+        docxSection.style.display = 'none';
+        pdfSection.style.display = 'block';
+        docxInput.value = '';
+        docxInput.removeAttribute('required');
+        pdfInput.setAttribute('required', 'required');
+    } else {
+        docxSection.style.display = 'block';
+        pdfSection.style.display = 'none';
+        pdfInput.value = '';
+        pdfInput.removeAttribute('required');
+        docxInput.setAttribute('required', 'required');
+    }
+}
+
+// Sahifa yuklanganda old() qiymatiga ko'ra toglaymiz
+document.addEventListener('DOMContentLoaded', function () {
+    const selected = document.querySelector('input[name="upload_type"]:checked');
+    if (selected) toggleUploadType(selected.value);
+});
+</script>
+<?php $__env->stopPush(); ?>
 <?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\Projects\artiqle\resources\views/admin/articles/create.blade.php ENDPATH**/ ?>

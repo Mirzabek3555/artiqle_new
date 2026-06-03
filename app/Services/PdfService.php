@@ -376,11 +376,23 @@ class PdfService
         $editorName = $editorNames[$editorCode] ?? 'Prof. Yogendra Mishra';
 
         // ── Imzo bloki (chap pastki, logoga tegmagan holda) ──────────
-        // Sertifikat: 2480x1754, oq panel ~x:0-1260
-        // Logo template ichida ~x:350-600, y:1480+ atrofida → imzoni x:80, kengligi max 280px
-        $sigName = str_replace('Prof. ', '', $editorName);
-        $cInkBlue = imagecolorallocate($pageCanvas, 22, 45, 125); // Siyoh rang (rich dark blue)
-        $sigBottomY = $this->drawHandwrittenSignature($pageCanvas, $sigName, 80, 1380, $cInkBlue, 280);
+        // Barcha sertifikatlar uchun maxsus imzo tasvirini yuklash va chizish
+        $imzoPath = public_path('images/certificates/assets/imzo.png');
+        $sigBottomY = 1500; // Standart joylashuv
+        if (file_exists($imzoPath)) {
+            $imzo = @imagecreatefrompng($imzoPath);
+            if ($imzo) {
+                imagealphablending($pageCanvas, true);
+                $imzoW = imagesx($imzo);
+                $imzoH = imagesy($imzo);
+                $targetW = 320;
+                $targetH = (int)($imzoH * ($targetW / $imzoW));
+                // Y=1450 ga joylashtiramiz, shunda Google logolari bilan bir qatorda chiroyli joylashadi
+                imagecopyresampled($pageCanvas, $imzo, 80, 1450, 0, 0, $targetW, $targetH, $imzoW, $imzoH);
+                imagedestroy($imzo);
+                $sigBottomY = 1450 + $targetH;
+            }
+        }
 
         // "Chief editor" — qizil kursiv, imzo tagida
         $cRed = imagecolorallocate($pageCanvas, 180, 20, 20);
@@ -388,9 +400,9 @@ class PdfService
             $this->gdText($pageCanvas, 32, $fontI, $cRed, 'Chief editor', 80, $sigBottomY + 8, 360, 'left');
         }
 
-        // "Prof. Name" — qalin qora, Chief editor tagida
+        // "Theron Blackwell" — qalin qora, Chief editor tagida
         if ($fontB) {
-            $this->gdText($pageCanvas, 30, $fontB, $cBlack, $editorName, 80, $sigBottomY + 60, 460, 'left');
+            $this->gdText($pageCanvas, 30, $fontB, $cBlack, 'Theron Blackwell', 80, $sigBottomY + 60, 460, 'left');
         }
 
         // ════════════════════════════════════════════════════════════

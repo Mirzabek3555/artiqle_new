@@ -340,8 +340,7 @@
         .docx-content img {
             max-width: 100%;
             height: auto;
-            display: block;
-            margin: 2mm auto;
+            vertical-align: middle;
         }
 
         .docx-content table {
@@ -351,14 +350,21 @@
             font-size: 8pt;
         }
 
+        /* Sukut bo'yicha jadvallar chegarasiz (Word default xulqi) */
         .docx-content table td,
         .docx-content table th {
-            border: 0.3pt solid #999;
+            border: none;
             padding: 1mm 2mm;
             text-align: left;
         }
 
-        .docx-content table th {
+        /* Faqat Word'da aniq chegara belgilangan jadvallar uchun */
+        .docx-content table.bordered-table td,
+        .docx-content table.bordered-table th {
+            border: 0.3pt solid #999;
+        }
+
+        .docx-content table.bordered-table th {
             background: #f0f0f0;
             font-weight: 700;
         }

@@ -169,17 +169,68 @@
                 <!-- Fayl yuklash -->
                 <div class="card mb-4 border-success">
                     <div class="card-header bg-success bg-opacity-10">
-                        <i class="bi bi-file-earmark-word me-2"></i>Maqola faylini yangilash (Word docx)
+                        <i class="bi bi-cloud-upload me-2"></i>Maqola faylini yangilash (ixtiyoriy)
                     </div>
                     <div class="card-body">
+
+                        @if($article->formatted_pdf_path)
+                        <div class="alert alert-info py-2 mb-3">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>
+                            Hozirgi fayl mavjud. Yangi fayl yuklamasangiz, joriy fayl saqlanadi.
+                        </div>
+                        @endif
+
+                        <!-- Yuklash turi tanlash -->
                         <div class="mb-3">
+                            <label class="form-label fw-bold">Yangilash turi</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="upload_type"
+                                        id="edit_upload_type_docx" value="docx" checked
+                                        onchange="toggleUploadType('docx')">
+                                    <label class="form-check-label" for="edit_upload_type_docx">
+                                        <i class="bi bi-file-earmark-word text-primary me-1"></i>
+                                        <strong>Word (DOCX)</strong>
+                                        <small class="text-muted d-block">Oddiy maqolalar</small>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="upload_type"
+                                        id="edit_upload_type_pdf" value="pdf"
+                                        onchange="toggleUploadType('pdf')">
+                                    <label class="form-check-label" for="edit_upload_type_pdf">
+                                        <i class="bi bi-file-earmark-pdf text-danger me-1"></i>
+                                        <strong>PDF (tayyor)</strong>
+                                        <small class="text-muted d-block">Formulalar, rasmlar, murakkab layout</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DOCX -->
+                        <div id="docx_upload_section" class="mb-2">
                             <label class="form-label fw-bold">
-                                <i class="bi bi-upload me-1"></i>Yangi DOCX fayl (agar o'zgartirmoqchi bo'lsangiz)
+                                <i class="bi bi-upload me-1"></i>Yangi DOCX fayl
                             </label>
-                            <input type="file" class="form-control form-control-lg" name="docx_file" accept=".docx,.doc">
-                            <small class="text-muted">
-                                Fayl yuklamasangiz, maqolaning joriy fayli saqlanib qoladi.
-                            </small>
+                            <input type="file" class="form-control form-control-lg @error('docx_file') is-invalid @enderror"
+                                id="docx_file" name="docx_file" accept=".docx,.doc">
+                            @error('docx_file')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">Yuklasangiz, tizim DOCX → PDF konvertatsiya qiladi.</small>
+                        </div>
+
+                        <!-- PDF -->
+                        <div id="pdf_upload_section" class="mb-2" style="display:none;">
+                            <label class="form-label fw-bold text-danger">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Tayyor PDF fayl
+                            </label>
+                            <input type="file" class="form-control form-control-lg @error('pdf_file') is-invalid @enderror"
+                                id="pdf_file" name="pdf_file" accept=".pdf">
+                            @error('pdf_file')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">Word'dan eksport qilgan PDF — rasmlar va formulalar asl holatda saqlanadi. Maks: 50MB</small>
                         </div>
                     </div>
                 </div>
@@ -197,4 +248,26 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+function toggleUploadType(type) {
+    const docxSection = document.getElementById('docx_upload_section');
+    const pdfSection = document.getElementById('pdf_upload_section');
+    const docxInput = document.getElementById('docx_file');
+    const pdfInput = document.getElementById('pdf_file');
+
+    if (type === 'pdf') {
+        docxSection.style.display = 'none';
+        pdfSection.style.display = 'block';
+        if (docxInput) docxInput.value = '';
+    } else {
+        docxSection.style.display = 'block';
+        pdfSection.style.display = 'none';
+        if (pdfInput) pdfInput.value = '';
+    }
+}
+</script>
+@endpush
+
 

@@ -236,8 +236,9 @@ class ArticlePdfService
         }
         file_put_contents($tempHtmlPath, $html);
 
+        $isWindows = PHP_OS_FAMILY === 'Windows';
         $command = sprintf(
-            'sudo -u root %s %s %s %s %s %s %s %s %s',
+            ($isWindows ? '' : 'sudo -u root ') . '%s %s %s %s %s %s %s %s %s',
             escapeshellarg($nodePath),
             escapeshellarg($scriptPath),
             escapeshellarg($outputPath),
@@ -824,6 +825,118 @@ class ArticlePdfService
     }
 
     /**
+     * To'g'ridan-to'g'ri yuklangan tayyor PDF ni overlay bilan birlashtirish
+     * Sahifalarni kichraytirib (scale) markazga joylaydi, toki sarlavha va sidebar xalaqit bermasin.
+     */
+    public function mergeDirectPdfWithCoverPage(Article $article, Country $country, string $basePdfPath): string
+    {
+        set_time_limit(0);
+        ini_set('memory_limit', '-1');
+        ini_set('max_execution_time', '0');
+
+        $article->load(['conference']);
+        $conference = $article->conference;
+
+        if (!file_exists($basePdfPath)) {
+            throw new \Exception('Asl PDF fayl topilmadi: ' . $basePdfPath);
+        }
+
+        $headerImgPath = $this->getOptimizedImagePath(public_path('images/logo.png'), 150);
+        $logoPath = $this->getOptimizedImagePath(public_path('images/logo.png'), 250);
+
+        $pdf = new Fpdi('P', 'mm', 'A4');
+        $pdf->SetCompression(true);
+        $pdf->setFontSubsetting(true);
+        $pdf->setJPEGQuality(15);
+        $pdf->setImageScale(1.53);
+
+        $pdf->SetCreator('Artiqle - International Scientific Conferences');
+        $pdf->SetAuthor($article->author_name ?? 'Unknown Author');
+        $pdf->SetTitle($article->title);
+        $pdf->SetAutoPageBreak(false);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetMargins(0, 0, 0);
+
+        try {
+            $originalPageCount = $pdf->setSourceFile($basePdfPath);
+        } catch (\Exception $e) {
+            throw new \Exception('PDF faylni o\'qishda xatolik: ' . $e->getMessage());
+        }
+
+        $importedPages = [];
+        for ($i = 1; $i <= $originalPageCount; $i++) {
+            $importedPages[$i] = $pdf->importPage($i);
+        }
+
+        $sidebarWidth = 28;
+        $leftMargin = $sidebarWidth + 5; // 33
+        $rightMargin = 15;
+        $contentWidth = 210 - $leftMargin - $rightMargin; // 162
+
+        $firstPageTopMargin = $this->calculateHeaderHeight($article, $country, $conference, $contentWidth, true) + 5; 
+        
+        $outputPageCount = 0;
+
+        for ($i = 1; $i <= $originalPageCount; $i++) {
+            $pdf->AddPage();
+            $outputPageCount++;
+            
+            // Matnni juda ham chetga chiqib ketmasligi uchun scale ni 0.96 qilamiz.
+            $scale = 0.96;
+            $newW = 210 * $scale;
+            $newH = 297 * $scale;
+            
+            // X offset 8mm qilsak, chap taraf sidebar'dan chiroyli masofada (32-33mm atrofida) boshlanadi
+            $x = 8; 
+            
+            if ($i === 1) {
+                // 1-sahifa: Header original maqolani yopib qo'ymasligi uchun pastga tushiramiz,
+                // lekin original PDF ning yuqori marginini qoplash uchun y-ni kamaytiramiz (-22).
+                $y = max(0, $firstPageTopMargin - 22); 
+                
+                $pdf->useTemplate($importedPages[$i], $x, $y, $newW, $newH);
+
+                $this->drawIncopSidebar($pdf, $sidebarWidth, $headerImgPath, $logoPath);
+                $this->drawIncopHeader($pdf, $article, $country, $conference, $leftMargin, true, $y, $scale, $basePdfPath);
+                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+            } else {
+                // Qolgan sahifalar
+                $y = 5; 
+                
+                $pdf->useTemplate($importedPages[$i], $x, $y, $newW, $newH);
+
+                $this->drawIncopSidebar($pdf, $sidebarWidth, $headerImgPath, $logoPath);
+                $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
+                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+            }
+        }
+
+        $filename = 'formatted_' . time() . '_' . $article->id . '.pdf';
+        $path = 'articles/formatted/' . $filename;
+        $fullPath = Storage::disk('public')->path($path);
+
+        $directory = dirname($fullPath);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $pdf->Output($fullPath, 'F');
+
+        unset($pdf);
+        if (function_exists('gc_collect_cycles')) {
+            gc_collect_cycles();
+        }
+
+        $article->update([
+            'page_count'        => $outputPageCount,
+            'formatted_pdf_path' => $path,
+        ]);
+
+        return $path;
+    }
+
+    /**
      * Rasmni optimizatsiya qilish (Kichraytirish va JPG ga o'girish)
      * Hajmni kamaytirish uchun
      */
@@ -956,7 +1069,7 @@ class ArticlePdfService
     /**
      * Helper to calculate the exact header height before drawing
      */
-    private function calculateHeaderHeight(Article $article, Country $country, Conference $conference, float $contentWidth): float
+    private function calculateHeaderHeight(Article $article, Country $country, Conference $conference, float $contentWidth, bool $isDirectPdf = false): float
     {
         // Minimal PDF instance for measuring text
         $pdf = new Fpdi('P', 'mm', 'A4');
@@ -977,6 +1090,10 @@ class ArticlePdfService
         $currentY += 2;  // separator gap
         $currentY += 6;  // date line (10pt)
         $currentY += 3;  // gap before article content
+
+        if ($isDirectPdf) {
+            return $currentY;
+        }
 
         // 4. Info Block heights
         $titleObj = strtoupper($article->title);
@@ -1047,7 +1164,7 @@ class ArticlePdfService
      * INCOP Header chizish (Rasmga mos)
      * @return float Header balandligi
      */
-    private function drawIncopHeader($pdf, $article, $country, $conference, $leftMargin = 28): float
+    private function drawIncopHeader($pdf, $article, $country, $conference, $leftMargin = 28, bool $isDirectPdf = false, float $yOffset = 0, float $scale = 1.0, string $pdfPath = ''): float
     {
         $margins = $pdf->getMargins();
         $pageWidth = 210;
@@ -1116,7 +1233,6 @@ class ArticlePdfService
 
         // 4. ARTICLE CONTENT BLOCK (Title, Author, Abstract, Keywords)
         // Davlat bayroq ranglariga asoslangan orqa fon
-
         $titleObj = strtoupper($article->title);
 
         $authorsData = [];
@@ -1163,19 +1279,88 @@ class ArticlePdfService
                 $pdf->SetFont('freeserif', 'I', 10);
                 $authorsH += $pdf->getStringHeight($contentWidth, $author['affiliation']) + 1;
             }
-            $authorsH += 1; // Gap between authors
+            $authorsH += 1;
         }
-        $authorsH -= 1; // Remove last gap
-
-        $pdf->SetFont('freeserif', '', 11);
-        $abstractH = empty($abstractObj) ? 0 : $pdf->getStringHeight($contentWidth, $abstractObj);
-
-        $pdf->SetFont('freeserif', 'I', 11);
-        $keywordsH = empty($keywordsObj) ? 0 : $pdf->getStringHeight($contentWidth, $keywordsObj);
+        $authorsH -= 1;
 
         $padding = 5;
         $gap = 3;
 
+        if ($isDirectPdf) {
+            // PDF tahlil qilinadi: Annotatsiya yoki Kirish boshlanadigan Y koordinatani topamiz
+            $abstractY = null;
+            if (!empty($pdfPath) && file_exists($pdfPath)) {
+                try {
+                    $parser = new \Smalot\PdfParser\Parser();
+                    $parsedPdf = $parser->parseFile($pdfPath);
+                    $pages = $parsedPdf->getPages();
+                    if (!empty($pages)) {
+                        $page = $pages[0];
+                        $details = $page->getDetails();
+                        $mediaBox = $details['MediaBox'] ?? [0, 0, 595.27, 841.89];
+                        $pageHeightPoints = $mediaBox[3];
+                        $dataTm = $page->getDataTm();
+                        $cleanTitle = mb_strtolower($article->title);
+                        
+                        foreach ($dataTm as $element) {
+                            $text = trim($element[1]);
+                            if (empty($text)) continue;
+                            
+                            $y = $element[0][5];
+                            $y_mm = $y * 0.352778;
+                            $pageHeightMm = $pageHeightPoints * 0.352778;
+                            $topDownY_mm = $pageHeightMm - $y_mm;
+                            
+                            $finalY = ($topDownY_mm * $scale) + $yOffset;
+                            
+                            // Y koordinatasi 35mm dan tepa bo'lmasligi kerak (chunki u tepada sarlavha bo'ladi)
+                            if ($finalY <= 35) {
+                                continue;
+                            }
+                            
+                            // Agar topilgan so'z sarlavha tarkibida bo'lsa, uni hisoblamaymiz
+                            if (mb_strlen($text) > 3 && mb_strpos($cleanTitle, mb_strtolower($text)) !== false) {
+                                continue;
+                            }
+                            
+                            // Annotatsiya yoki Kirish qismlarining kalit so'zlari
+                            if (preg_match('/^(annotatsiya|abstract|аннотация|kirish|introduction|введение|kalit\s*so|key\s*words|ключевые)/i', $text)) {
+                                $abstractY = $finalY;
+                                Log::info("Found abstract Y in drawIncopHeader: '$text' at {$abstractY}mm");
+                                break;
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Failed to parse abstract Y in drawIncopHeader: " . $e->getMessage());
+                }
+            }
+
+            if ($abstractY !== null) {
+                // Annotatsiyagacha bo'lgan masofani aniqlab, 4mm zaxira qoldiramiz.
+                // Lekin juda kichik yoki juda katta bo'lib ketmasligi uchun chegaralaymiz (min 20mm, max 150mm)
+                $totalBlockHeight = max(20, min(150, $abstractY - $currentY - 4));
+            } else {
+                // Agar topilmasa, fallback hisob-kitob
+                $totalBlockHeight = $titleH + $gap + $authorsH + $padding * 2 + 30;
+            }
+            
+            // Shaffoflik (Highlighter effekti)
+            $pdf->SetAlpha(0.12);
+            $pdf->SetFillColor($primaryRgb['r'], $primaryRgb['g'], $primaryRgb['b']);
+            $pdf->Rect($leftMargin, $currentY, $contentWidth, $totalBlockHeight, 'F');
+            
+            // Chap chiziq
+            $pdf->SetAlpha(0.8);
+            $pdf->SetFillColor($primaryRgb['r'], $primaryRgb['g'], $primaryRgb['b']);
+            $pdf->Rect($leftMargin, $currentY, 2.5, $totalBlockHeight, 'F');
+            
+            // Reset alpha
+            $pdf->SetAlpha(1);
+
+            return $currentY;
+        }
+        // Umumiy blok uchun juda ochiq primary rang fon
         $totalBlockHeight = $titleH + $gap + $authorsH + $gap + $abstractH + ($abstractH ? $gap : 0) + $keywordsH + ($keywordsH ? $gap : 0) + $padding * 2;
 
         // Umumiy blok uchun juda ochiq primary rang fon
@@ -2315,8 +2500,9 @@ private function renderSimpleHtmlToPdf(string $html, string $outputPath, string 
         mkdir(dirname($tempHtmlPath), 0755, true);
     }
     file_put_contents($tempHtmlPath, $html);
+    $isWindows = PHP_OS_FAMILY === 'Windows';
     $command = sprintf(
-        'sudo -u root %s %s %s %s %s %s %s %s %s',
+        ($isWindows ? '' : 'sudo -u root ') . '%s %s %s %s %s %s %s %s %s',
         escapeshellarg($nodePath),
         escapeshellarg($scriptPath),
         escapeshellarg($outputPath),
@@ -2368,7 +2554,8 @@ private function renderSimpleHtmlToPdf(string $html, string $outputPath, string 
 	$nodePath = $this->findNodePath();
 	$tempHtmlPath = storage_path('app/temp/cover_' . uniqid() . '.html');
 	file_put_contents($tempHtmlPath, $html);
-	$command = sprintf('sudo -u root %s %s %s %s %s %s %s %s %s', escapeshellarg($nodePath), escapeshellarg($scriptPath), escapeshellarg($path), '0', '0', '0', '0', '0', escapeshellarg($tempHtmlPath));
+	$isWindows = PHP_OS_FAMILY === 'Windows';
+	$command = sprintf(($isWindows ? '' : 'sudo -u root ') . '%s %s %s %s %s %s %s %s %s', escapeshellarg($nodePath), escapeshellarg($scriptPath), escapeshellarg($path), '0', '0', '0', '0', '0', escapeshellarg($tempHtmlPath));
 	$descriptors = [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']];
 	$process = proc_open($command, $descriptors, $pipes, base_path());
 	if (is_resource($process)) { fclose($pipes[0]); stream_get_contents($pipes[1]); fclose($pipes[1]); stream_get_contents($pipes[2]); fclose($pipes[2]); proc_close($process); }
