@@ -164,7 +164,7 @@ SCHEMA.ORG STRUCTURED DATA (SEO Boost)
                         {
                             "@type": "ListItem",
                             "position": 2,
-                            "name": "{{ $article->conference->country->name }}",
+                            "name": "{{ $article->conference->country->name_en ?? $article->conference->country->name }}",
                             "item": "{{ route('country.show', $article->conference->country) }}"
                         },
                         {
@@ -200,7 +200,7 @@ MAIN CONTENT
                     </li>
                     <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                         <a href="{{ route('country.show', $article->conference->country) }}" itemprop="item">
-                            <span itemprop="name">{{ $article->conference->country->name }}</span>
+                            <span itemprop="name">{{ $article->conference->country->name_en ?? $article->conference->country->name }}</span>
                         </a>
                         <meta itemprop="position" content="2" />
                     </li>

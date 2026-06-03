@@ -23,7 +23,7 @@
                                 <h5 class="mt-3">{{ $article->certificate->certificate_number }}</h5>
                                 <p class="text-muted">{{ $article->title }}</p>
                                 <p class="small text-muted">
-                                    <i class="bi bi-geo-alt me-1"></i>{{ $article->conference->country->name }}
+                                    <i class="bi bi-geo-alt me-1"></i>{{ $article->conference->country->name_en ?? $article->conference->country->name }}
                                     <br>
                                     <i class="bi bi-calendar me-1"></i>{{ $article->certificate->issue_date->format('d.m.Y') }}
                                 </p>

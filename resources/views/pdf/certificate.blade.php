@@ -202,7 +202,7 @@
 
             <div class="conference">
                 <strong>{{ $conference->title }}</strong><br>
-                {{ $country->name }} ({{ $country->name_en }})
+                {{ $country->name_en ?? $country->name }}
             </div>
 
             <div class="footer">

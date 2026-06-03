@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $country->conference_name ?? $country->name)
+@section('title', $country->conference_name ?? $country->name_en ?? $country->name)
 
 @section('content')
     <!-- Journal Header -->
@@ -29,7 +29,7 @@
                     <div class="issue-info mb-4">
                         <h3 class="issue-title" style="color: #1a5276; font-size: 1.1rem; font-weight: 600;">
                             Vol. {{ date('Y') }} No. {{ date('m') }} ({{ date('Y') }}):
-                            {{ $country->conference_name ?? $country->name . ' - Scientific Conference Proceedings' }}
+                            {{ $country->conference_name ?? ($country->name_en ?? $country->name) . ' - Scientific Conference Proceedings' }}
                         </h3>
 
                         <div class="row mt-4">
@@ -132,11 +132,10 @@
                     <h5 class="sidebar-title">Conference Country</h5>
                     <div class="country-info text-center py-3">
                         @if($country->flag_url)
-                            <img src="{{ Storage::url($country->flag_url) }}" alt="{{ $country->name }}"
+                            <img src="{{ Storage::url($country->flag_url) }}" alt="{{ $country->name_en ?? $country->name }}"
                                 style="width: 100px; height: 65px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.15);">
                         @endif
-                        <h6 class="mt-3 mb-1">{{ $country->name }}</h6>
-                        <p class="text-muted small mb-0">{{ $country->name_en }}</p>
+                        <h6 class="mt-3 mb-0">{{ $country->name_en ?? $country->name }}</h6>
                     </div>
                 </div>
 

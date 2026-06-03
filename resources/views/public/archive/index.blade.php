@@ -61,7 +61,7 @@
                                             <img src="{{ Storage::url($conference->country->flag_url) }}" 
                                                  style="width: 20px; height: 14px; object-fit: cover; border-radius: 3px; margin-right: 4px;">
                                         @endif
-                                        {{ $conference->country->name }}
+                                        {{ $conference->country->name_en ?? $conference->country->name }}
                                     </span>
                                 </div>
                             </div>

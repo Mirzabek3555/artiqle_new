@@ -33,13 +33,13 @@
                             <div class="card-img-top position-relative" style="height: 220px; overflow: hidden;">
                                 @if($country->cover_image)
                                     <img src="{{ asset($country->cover_image) }}" 
-                                         alt="{{ $country->name }}"
+                                         alt="{{ $country->name_en ?? $country->name }}"
                                          style="width: 100%; height: 100%; object-fit: cover;">
                                 @else
                                     <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1a3a5f 0%, #0d2137 100%); display: flex; align-items: center; justify-content: center;">
                                         @if($country->flag_url)
                                             <img src="{{ Storage::url($country->flag_url) }}" 
-                                                 alt="{{ $country->name }}"
+                                                 alt="{{ $country->name_en ?? $country->name }}"
                                                  style="width: 120px; height: 80px; object-fit: cover; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
                                         @else
                                             <div class="text-center">
@@ -56,7 +56,7 @@
                                             <img src="{{ Storage::url($country->flag_url) }}" 
                                                  style="width: 24px; height: 16px; object-fit: cover; border-radius: 3px; margin-right: 6px;">
                                         @endif
-                                        {{ $country->name }}
+                                        {{ $country->name_en ?? $country->name }}
                                     </span>
                                 </div>
                                 <!-- Articles count -->
@@ -73,7 +73,7 @@
                                     {{ $country->conference_name ?? 'Bu yerda konferensiya nomi yoziladi' }}
                                 </h5>
                                 <p class="text-muted small mb-3">
-                                    <i class="bi bi-geo-alt me-1"></i>{{ $country->name }} ({{ $country->name_en }})
+                                    <i class="bi bi-geo-alt me-1"></i>{{ $country->name_en ?? $country->name }}
                                 </p>
                                 @if($country->conference_description)
                                     <p class="card-text text-muted mb-3" style="font-size: 0.9rem;">

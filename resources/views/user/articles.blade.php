@@ -25,7 +25,7 @@
                                         <p class="text-muted mb-2">
                                             <i class="bi bi-calendar-event me-1"></i>{{ $article->conference->title }}
                                             <span class="mx-2">•</span>
-                                            <i class="bi bi-geo-alt me-1"></i>{{ $article->conference->country->name }}
+                                            <i class="bi bi-geo-alt me-1"></i>{{ $article->conference->country->name_en ?? $article->conference->country->name }}
                                         </p>
                                         <div>
                                             @if($article->status === 'published')

@@ -461,6 +461,15 @@ class ArticlePdfService
         // Asl tarkibning taxminiy o'ng margini ham 15mm deb olamiz
         $srcRightMargin = 15;
 
+        // To'plamdagi sahifa raqami offsetini hisoblash (page_range: "5-11" → offset = 4)
+        $pageOffset = 0;
+        if (!empty($article->page_range)) {
+            $rangeParts = explode('-', $article->page_range);
+            if (count($rangeParts) >= 1 && is_numeric(trim($rangeParts[0]))) {
+                $pageOffset = (int)trim($rangeParts[0]) - 1;
+            }
+        }
+
         // GLOBAL SCALE Calculation - Consistency across pages
         // Available Width on Output: $availableWidth (Calculated above: 210 - $leftMargin - $rightMargin) 
         // ~167mm (agar left=28+5=33, right=15 bo'lsa)
@@ -488,7 +497,7 @@ class ArticlePdfService
 
         $outBottomLimit = 280; // Footer mask bilan ANIQ mos (sahifa raqami uchun 17mm)
 
-        $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+        $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
 
         while ($currentSourcePageIdx <= $originalPageCount) {
             $templateId = $importedPages[$currentSourcePageIdx];
@@ -516,7 +525,7 @@ class ArticlePdfService
 
                 $this->drawIncopSidebar($pdf, 28, $headerImgPath, $logoPath);
                 $runningHeaderY = $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
-                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
 
                 $currentOutY = 25;
                 $outBottomLimit = 280;
@@ -575,7 +584,7 @@ class ArticlePdfService
 
                     $this->drawIncopSidebar($pdf, 28, $headerImgPath, $logoPath);
                     $runningHeaderY = $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
-                    $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+                    $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
 
                     // Content header maskasi bilan ANIQ mos — 25mm
                     $currentOutY = 25;
@@ -598,7 +607,7 @@ class ArticlePdfService
                 $outputPageCount++;
                 $this->drawIncopSidebar($pdf, 28, $headerImgPath, $logoPath);
                 $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
-                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
                 $currentOutY = 25;
                 $outBottomLimit = 280;
             }
@@ -622,7 +631,7 @@ class ArticlePdfService
                     $outputPageCount++;
                     $this->drawIncopSidebar($pdf, 28, $headerImgPath, $logoPath);
                     $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
-                    $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+                    $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
                     $currentOutY = 25;
                     $outBottomLimit = 280;
                 }
@@ -876,6 +885,15 @@ class ArticlePdfService
 
         $firstPageTopMargin = $this->calculateHeaderHeight($article, $country, $conference, $contentWidth, true) + 5; 
         
+        // To'plamdagi sahifa raqami offsetini hisoblash (page_range: "5-11" → offset = 4)
+        $pageOffset = 0;
+        if (!empty($article->page_range)) {
+            $rangeParts = explode('-', $article->page_range);
+            if (count($rangeParts) >= 1 && is_numeric(trim($rangeParts[0]))) {
+                $pageOffset = (int)trim($rangeParts[0]) - 1;
+            }
+        }
+
         $outputPageCount = 0;
 
         for ($i = 1; $i <= $originalPageCount; $i++) {
@@ -899,7 +917,7 @@ class ArticlePdfService
 
                 $this->drawIncopSidebar($pdf, $sidebarWidth, $headerImgPath, $logoPath);
                 $this->drawIncopHeader($pdf, $article, $country, $conference, $leftMargin, true, $y, $scale, $basePdfPath);
-                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
             } else {
                 // Qolgan sahifalar
                 $y = 5; 
@@ -908,7 +926,7 @@ class ArticlePdfService
 
                 $this->drawIncopSidebar($pdf, $sidebarWidth, $headerImgPath, $logoPath);
                 $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
-                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount, 0, $leftMargin);
+                $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
             }
         }
 
@@ -1930,6 +1948,15 @@ class ArticlePdfService
         $country = $article->conference->country;
         $conference = $article->conference;
 
+        // To'plamdagi sahifa raqami offsetini hisoblash (page_range: "5-11" → offset = 4)
+        $pageOffset = 0;
+        if (!empty($article->page_range)) {
+            $rangeParts = explode('-', $article->page_range);
+            if (count($rangeParts) >= 1 && is_numeric(trim($rangeParts[0]))) {
+                $pageOffset = (int)trim($rangeParts[0]) - 1;
+            }
+        }
+
         // FPDI bilan PDF birlashtirish
         $pdf = new Fpdi('P', 'mm', 'A4');
         $pdf->SetCreator('ISOC - International Scientific Online Conference');
@@ -1959,8 +1986,8 @@ class ArticlePdfService
                 $pdf->useTemplate($tplId, 0, 0, 210, 297);
 
                 // Har sahifada header va footer qo'shish
-                $this->addPageHeader($pdf, $article, $country, $pageNo);
-                $this->addPageFooter($pdf, $article, $conference, $pageNo, $pageCount);
+                $this->addPageHeader($pdf, $article, $country, $pageNo + $pageOffset);
+                $this->addPageFooter($pdf, $article, $conference, $pageNo + $pageOffset, $pageCount);
             }
         }
 

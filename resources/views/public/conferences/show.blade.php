@@ -12,7 +12,7 @@
                             sahifa</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('countries') }}">Davlatlar</a></li>
                     <li class="breadcrumb-item"><a
-                            href="{{ route('country.show', $conference->country) }}">{{ $conference->country->name }}</a>
+                            href="{{ route('country.show', $conference->country) }}">{{ $conference->country->name_en ?? $conference->country->name }}</a>
                     </li>
                     <li class="breadcrumb-item active">{{ Str::limit($conference->title, 30) }}</li>
                 </ol>
@@ -25,13 +25,13 @@
         <div class="card journal-card mb-4">
             <div class="card-header d-flex align-items-center">
                 @if($conference->country->flag_url)
-                    <img src="{{ Storage::url($conference->country->flag_url) }}" alt="{{ $conference->country->name }}"
+                    <img src="{{ Storage::url($conference->country->flag_url) }}" alt="{{ $conference->country->name_en ?? $conference->country->name }}"
                         style="width: 60px; height: 40px; object-fit: cover; border-radius: 6px; margin-right: 15px;">
                 @endif
                 <div class="flex-grow-1">
                     <h1 class="card-title fs-4 mb-1">{{ $conference->title }}</h1>
                     <p class="text-muted mb-0">
-                        <i class="bi bi-geo-alt me-1"></i>{{ $conference->country->name }}
+                        <i class="bi bi-geo-alt me-1"></i>{{ $conference->country->name_en ?? $conference->country->name }}
                         <span class="mx-2">•</span>
                         <i class="bi bi-calendar me-1"></i>{{ $conference->conference_date->format('d F Y') }}
                     </p>

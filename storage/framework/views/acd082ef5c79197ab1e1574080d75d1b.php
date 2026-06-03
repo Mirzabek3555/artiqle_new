@@ -1,6 +1,6 @@
 
 
-<?php $__env->startSection('title', $country->conference_name ?? $country->name); ?>
+<?php $__env->startSection('title', $country->conference_name ?? $country->name_en ?? $country->name); ?>
 
 <?php $__env->startSection('content'); ?>
     <!-- Journal Header -->
@@ -30,7 +30,7 @@
                     <div class="issue-info mb-4">
                         <h3 class="issue-title" style="color: #1a5276; font-size: 1.1rem; font-weight: 600;">
                             Vol. <?php echo e(date('Y')); ?> No. <?php echo e(date('m')); ?> (<?php echo e(date('Y')); ?>):
-                            <?php echo e($country->conference_name ?? $country->name . ' - Scientific Conference Proceedings'); ?>
+                            <?php echo e($country->conference_name ?? ($country->name_en ?? $country->name) . ' - Scientific Conference Proceedings'); ?>
 
                         </h3>
 
@@ -139,11 +139,10 @@
                     <h5 class="sidebar-title">Conference Country</h5>
                     <div class="country-info text-center py-3">
                         <?php if($country->flag_url): ?>
-                            <img src="<?php echo e(Storage::url($country->flag_url)); ?>" alt="<?php echo e($country->name); ?>"
+                            <img src="<?php echo e(Storage::url($country->flag_url)); ?>" alt="<?php echo e($country->name_en ?? $country->name); ?>"
                                 style="width: 100px; height: 65px; object-fit: cover; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.15);">
                         <?php endif; ?>
-                        <h6 class="mt-3 mb-1"><?php echo e($country->name); ?></h6>
-                        <p class="text-muted small mb-0"><?php echo e($country->name_en); ?></p>
+                        <h6 class="mt-3 mb-0"><?php echo e($country->name_en ?? $country->name); ?></h6>
                     </div>
                 </div>
 
