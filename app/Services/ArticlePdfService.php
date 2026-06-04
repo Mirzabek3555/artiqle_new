@@ -183,7 +183,7 @@ class ArticlePdfService
             '22mm', // Subsequent pages top margin (running header ~21mm + 1mm gap)
             '33mm', // Left margin
             '15mm', // Right margin
-            '15mm'  // Bottom margin (footer ~15mm from bottom)
+            '25mm'  // Bottom margin (footer ~25mm from bottom to hide original page numbers)
         );
 
         // 4. Base PDF ni article ga saqlash
@@ -1612,9 +1612,9 @@ class ArticlePdfService
     private function drawIncopFooter($pdf, $article, $country, $pageNo, $totalPages, $leftMargin = 28): void
     {
         $pageWidth = 210;
-        // Footer maskasi — pastki 15mm ni yopish
-        $footerMaskStart = 282; // content 282mm da to'xtaydi
-        $footerMaskHeight = 297 - $footerMaskStart; // 15mm
+        // Footer maskasi — pastki 25mm ni yopish (asl fayldagi sahifa raqamlarini yashirish uchun)
+        $footerMaskStart = 272; // content 272mm da to'xtaydi
+        $footerMaskHeight = 297 - $footerMaskStart; // 25mm
         $pdf->SetFillColor(255, 255, 255);
         $pdf->Rect(0, $footerMaskStart, $pageWidth, $footerMaskHeight, 'F');
 
@@ -2380,33 +2380,54 @@ class ArticlePdfService
         ]);
 
         // 0. Maqolalarning sahifalarini hisoblash va ma'lumotlar bazasini yangilash
+        // MUHIM: Faqat RAW pdf_path dan hisoblaymiz (formatted_pdf_path dan emas),
+        // chunki formatted PDF keyinroq qayta yaratiladi va sahifa sonini o'zgartirishi mumkin.
         $tempPdf = new Fpdi();
         $startPage = 1;
         $orderCounter = 1;
 
         foreach ($conference->articles as $article) {
-            $articlePdfPath = $article->formatted_pdf_path
-                ? Storage::disk('public')->path($article->formatted_pdf_path)
-                : Storage::disk('public')->path($article->pdf_path);
+            // Faqat RAW (asl) PDF dan hisoblaymiz
+            $rawPdfPath = !empty($article->pdf_path)
+                ? Storage::disk('public')->path($article->pdf_path)
+                : null;
 
-            if (file_exists($articlePdfPath)) {
+            if ($rawPdfPath && file_exists($rawPdfPath)) {
                 try {
-                    $pageCount = $tempPdf->setSourceFile($articlePdfPath);
+                    $pageCount = $tempPdf->setSourceFile($rawPdfPath);
                     if ($pageCount > 0) {
                         $endPage = $startPage + $pageCount - 1;
-                        
-                        // Ma'lumotlarni xotirada va bazada yangilaymiz
-                        if ($article->order_number != $orderCounter || $article->page_range !== "$startPage-$endPage") {
-                            $article->order_number = $orderCounter;
-                            $article->page_range = "$startPage-$endPage";
-                            $article->save();
-                        }
-                        
+
+                        // page_range va order_number ni yangilaymiz
+                        $article->order_number = $orderCounter;
+                        $article->page_range = "$startPage-$endPage";
+                        $article->page_count = $pageCount;
+                        $article->save();
+
                         $startPage = $endPage + 1;
                         $orderCounter++;
                     }
                 } catch (\Exception $e) {
                     \Log::warning("Sahifa hisoblash xatoligi (Article ID: {$article->id}): " . $e->getMessage());
+                }
+            } elseif (!empty($article->formatted_pdf_path)) {
+                // Raw PDF yo'q, lekin formatted PDF bor — undan hisoblaymiz (fallback)
+                $formattedPath = Storage::disk('public')->path($article->formatted_pdf_path);
+                if (file_exists($formattedPath)) {
+                    try {
+                        $pageCount = $tempPdf->setSourceFile($formattedPath);
+                        if ($pageCount > 0) {
+                            $endPage = $startPage + $pageCount - 1;
+                            $article->order_number = $orderCounter;
+                            $article->page_range = "$startPage-$endPage";
+                            $article->page_count = $pageCount;
+                            $article->save();
+                            $startPage = $endPage + 1;
+                            $orderCounter++;
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning("Fallback sahifa hisoblash xatoligi (Article ID: {$article->id}): " . $e->getMessage());
+                    }
                 }
             }
         }
@@ -2419,9 +2440,19 @@ class ArticlePdfService
         if ($country) {
             foreach ($conference->articles as $article) {
                 try {
-                    $basePath = Storage::disk('public')->path($article->pdf_path ?? '');
-                    if (!empty($article->pdf_path) && file_exists($basePath)) {
-                        $this->mergeWithCoverPage($article, $country);
+                    // Bazadan yangi page_range ni o'qish uchun refresh qilamiz
+                    $article->refresh();
+
+                    $basePath = !empty($article->pdf_path)
+                        ? Storage::disk('public')->path($article->pdf_path)
+                        : null;
+
+                    if ($basePath && file_exists($basePath)) {
+                        if (str_contains($article->pdf_path, 'articles/pdfs')) {
+                            $this->mergeDirectPdfWithCoverPage($article, $country, $basePath);
+                        } else {
+                            $this->mergeWithCoverPage($article, $country);
+                        }
                     }
                 } catch (\Exception $e) {
                     \Log::warning("Formatted PDF regeneration error (Article {$article->id}): " . $e->getMessage());
@@ -2466,11 +2497,14 @@ class ArticlePdfService
         // 3. Har bir maqolani qo'shish
         $currentPage = 1;
         foreach ($conference->articles as $article) {
-            $articlePdfPath = $article->formatted_pdf_path
-                ? Storage::disk('public')->path($article->formatted_pdf_path)
-                : Storage::disk('public')->path($article->pdf_path);
+            $articlePdfPath = null;
+            if (!empty($article->formatted_pdf_path)) {
+                $articlePdfPath = Storage::disk('public')->path($article->formatted_pdf_path);
+            } elseif (!empty($article->pdf_path)) {
+                $articlePdfPath = Storage::disk('public')->path($article->pdf_path);
+            }
 
-            if (file_exists($articlePdfPath)) {
+            if ($articlePdfPath && file_exists($articlePdfPath)) {
                 $pageCount = $pdf->setSourceFile($articlePdfPath);
 
                 for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
