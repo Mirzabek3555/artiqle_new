@@ -220,8 +220,6 @@ class ArticleController extends Controller
             }
         }
 
-        $startPage = 1;
-
         $maxOrder = Article::where('conference_id', $conference->id)->max('order_number');
         $nextOrder = $maxOrder ? $maxOrder + 1 : 1;
 
@@ -229,6 +227,12 @@ class ArticleController extends Controller
             $query->where('country_id', $country->id);
         })->max('country_article_number');
         $nextCountryArticleNumber = $maxCountryArticleNumber ? $maxCountryArticleNumber + 1 : 1;
+
+        // Konferensiya ichidagi oldingi maqolalar sahifalarini hisoblab, boshlang'ich sahifani aniqlash
+        $prevPagesTotal = Article::where('conference_id', $conference->id)
+            ->sum('page_count');
+        $startPage = $prevPagesTotal + 1;
+        $endPage = $startPage + $pageCount - 1;
 
         // Maqolani yaratish
         $article = Article::create([
@@ -243,7 +247,7 @@ class ArticleController extends Controller
             'references' => $validated['references'] ?? null,
             'content' => '',
             'page_count' => $pageCount,
-            'page_range' => '1-' . $pageCount,
+            'page_range' => $startPage . '-' . $endPage,
             'order_number' => $nextOrder,
             'status' => 'pending',
             'pdf_path' => null, 
@@ -260,9 +264,16 @@ class ArticleController extends Controller
                 
                 // Original faylni asl holatida qoldirib, faqat formatted_pdf_path ni yangilaymiz.
                 $article->update([
-                    'pdf_path' => $directPdfPath, // Asl yuklangan faylni pdf_path ga saqlab qo'yamiz (kerak bo'lsa)
+                    'pdf_path' => $directPdfPath,
                     'formatted_pdf_path' => $formattedPath,
                 ]);
+
+                // PDF yaratilgandan so'ng haqiqiy page_count ni olib, page_range ni yangilash
+                $article->refresh();
+                $actualPageCount = $article->page_count ?: $pageCount;
+                $endPage = $startPage + $actualPageCount - 1;
+                $article->update(['page_range' => $startPage . '-' . $endPage]);
+
             } catch (\Exception $e) {
                 \Log::error('Direct PDF merge failed: ' . $e->getMessage());
                 return redirect()->back()->with('error', 'PDF ga dizayn qo\'shishda xatolik: ' . $e->getMessage())->withInput();
@@ -285,6 +296,13 @@ class ArticleController extends Controller
                 $article->update([
                     'formatted_pdf_path' => $formattedPath,
                 ]);
+
+                // PDF yaratilgandan so'ng haqiqiy page_count ni olib, page_range ni yangilash
+                $article->refresh();
+                $actualPageCount = $article->page_count ?: $pageCount;
+                $endPage = $startPage + $actualPageCount - 1;
+                $article->update(['page_range' => $startPage . '-' . $endPage]);
+
             }
             catch (\Exception $e) {
                 \Log::error('PDF creation failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
@@ -378,17 +396,28 @@ class ArticleController extends Controller
                 Storage::disk('public')->delete($article->formatted_pdf_path);
             }
             $directPdfPath = $request->file('pdf_file')->store('articles/pdfs', 'public');
-            
+
+            // Konferensiya tartibidagi sahifa boshlang'ichini hisoblash
+            $prevPagesSumPdf = Article::where('conference_id', $article->conference_id)
+                ->where('id', '!=', $article->id)
+                ->where('order_number', '<', $article->order_number)
+                ->sum('page_count');
+            $pdfStartPage = $prevPagesSumPdf + 1;
+
             try {
                 \Log::info('Starting Direct PDF merge with Cover Page on update', ['article_id' => $article->id]);
                 $fullPdfPath = Storage::disk('public')->path($directPdfPath);
                 $formattedPath = $this->articlePdfService->mergeDirectPdfWithCoverPage($article, $country, $fullPdfPath);
-                
+
                 $validated['pdf_path'] = $directPdfPath;
                 $validated['formatted_pdf_path'] = $formattedPath;
+
+                // PDF yaratilgandan so'ng haqiqiy page_count ni olib, page_range yangilash
+                $article->refresh();
+                $pdfActualCount = $article->page_count ?: 1;
+                $validated['page_range'] = $pdfStartPage . '-' . ($pdfStartPage + $pdfActualCount - 1);
             } catch (\Exception $e) {
                 \Log::error('Direct PDF merge failed on update: ' . $e->getMessage());
-                // Fallback to saving it directly just in case, or ignore formatting if error
                 $validated['formatted_pdf_path'] = $directPdfPath;
             }
         }
@@ -421,14 +450,29 @@ class ArticleController extends Controller
                 $pageCount = max(1, ceil(mb_strlen($totalText) / 3000));
             } catch (\Exception $e) {}
 
+            // Konferensiya tartibidagi sahifa boshlang'ichini hisoblash
+            $prevPagesSum = Article::where('conference_id', $article->conference_id)
+                ->where('id', '!=', $article->id)
+                ->where('order_number', '<', $article->order_number)
+                ->sum('page_count');
+            $updateStartPage = $prevPagesSum + 1;
+            $updateEndPage = $updateStartPage + $pageCount - 1;
+
             $validated['page_count'] = $pageCount;
-            $validated['page_range'] = '1-' . $pageCount;
+            $validated['page_range'] = $updateStartPage . '-' . $updateEndPage;
 
             // DOCX -> PDF
             try {
                 \Log::info('Starting DOCX to PDF generation on update', ['article_id' => $article->id]);
                 $formattedPath = $this->articlePdfService->generateFromDocx($fullDocxPath, $article, $country);
                 $validated['formatted_pdf_path'] = $formattedPath;
+
+                // PDF yaratilgandan so'ng haqiqiy page_count ni olib, page_range ni yangilash
+                $article->update(['page_count' => $pageCount, 'page_range' => $updateStartPage . '-' . $updateEndPage]);
+                $article->refresh();
+                $actualPageCount = $article->page_count ?: $pageCount;
+                $updateEndPage = $updateStartPage + $actualPageCount - 1;
+                $validated['page_range'] = $updateStartPage . '-' . $updateEndPage;
             }
             catch (\Exception $e) {
                 \Log::error('Formatted PDF update failed: ' . $e->getMessage());
