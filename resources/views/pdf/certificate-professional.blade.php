@@ -769,16 +769,11 @@
                     <td class="footer-center">
                         <table style="width:100%;border-collapse:collapse;">
                             <tr>
-                                <td style="width:50%;text-align:center;padding:0 5mm;">
-                                    <div class="signature-block">
-                                        <div class="signature-line"></div>
-                                        <div class="signature-title">Conference Director</div>
-                                    </div>
-                                </td>
-                                <td style="width:50%;text-align:center;padding:0 5mm;">
+                                <td style="width:100%;text-align:center;padding:0 5mm;">
                                     <div class="signature-block">
                                         <div class="signature-line"></div>
                                         <div class="signature-title">Chief Editor</div>
+                                        <div class="signature-name">Theron Blackwell</div>
                                     </div>
                                 </td>
                             </tr>

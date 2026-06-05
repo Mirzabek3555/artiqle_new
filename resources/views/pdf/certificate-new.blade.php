@@ -514,8 +514,8 @@
                         </td>
                         <td style="width: 25%;">
                             <div class="editor-section">
-                                <div class="editor-name">Conference Director</div>
-                                <div class="editor-title">CHIEF EDITOR</div>
+                                <div class="editor-name">Theron Blackwell</div>
+                                <div class="editor-title">Chief Editor</div>
                             </div>
                         </td>
                     </tr>

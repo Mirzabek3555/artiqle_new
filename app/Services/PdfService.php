@@ -322,58 +322,8 @@ class PdfService
         // 5. CHIEF EDITOR NOMI (Davlatga mos)
         // ════════════════════════════════════════════════════════════
 
-        $editorNames = [
-            'UZ' => 'Prof. Sherzod Yusupov',
-            'GB' => 'Prof. Jonathan Hartley',
-            'DE' => 'Prof. Klaus Hoffmann',
-            'RU' => 'Prof. Alexander Petrov',
-            'FR' => 'Prof. Jean-Michel Beaumont',
-            'TR' => 'Prof. Mehmet Yilmaz',
-            'JP' => 'Prof. Hiroshi Tanaka',
-            'CN' => 'Prof. Zhang Wei',
-            'US' => 'Prof. Robert Williams',
-            'KZ' => 'Prof. Nursultan Akhmetov',
-            'KR' => 'Prof. Kim Junho',
-            'IN' => 'Prof. Priya Ramesh',
-            'IT' => 'Prof. Giovanni Esposito',
-            'ES' => 'Prof. Carlos Fernandez',
-            'PL' => 'Prof. Marek Kowalski',
-            'BR' => 'Prof. Carlos Oliveira',
-            'CA' => 'Prof. Michael Patterson',
-            'TM' => 'Prof. Berdymurat Atayev',
-            'AZ' => 'Prof. Elchin Mammadov',
-            'TJ' => 'Prof. Rustam Nazarov',
-            'KG' => 'Prof. Bakyt Mamytbekov',
-            'DK' => 'Prof. Anders Christensen',
-            'SE' => 'Prof. Erik Lindqvist',
-            'NO' => 'Prof. Lars Andersen',
-            'FI' => 'Prof. Mikko Korhonen',
-            'NL' => 'Prof. Jan van der Berg',
-            'BE' => 'Prof. Pierre Dubois',
-            'CH' => 'Prof. Thomas Müller',
-            'AT' => 'Prof. Wolfgang Bauer',
-            'PT' => 'Prof. João Ferreira',
-            'GR' => 'Prof. Nikos Papadopoulos',
-            'SA' => 'Prof. Abdullah Al-Rashid',
-            'AE' => 'Prof. Mohammed Al-Mansoori',
-        ];
-
-        $alpha3map = [
-            'UZB' => 'UZ', 'GBR' => 'GB', 'USA' => 'US', 'DEU' => 'DE',
-            'FRA' => 'FR', 'ITA' => 'IT', 'ESP' => 'ES', 'RUS' => 'RU',
-            'JPN' => 'JP', 'CHN' => 'CN', 'KOR' => 'KR', 'TUR' => 'TR',
-            'POL' => 'PL', 'KAZ' => 'KZ', 'IND' => 'IN', 'BRA' => 'BR',
-            'CAN' => 'CA', 'TKM' => 'TM', 'AZE' => 'AZ', 'TJK' => 'TJ', 'KGZ' => 'KG',
-            'DNK' => 'DK', 'SWE' => 'SE', 'NOR' => 'NO', 'FIN' => 'FI',
-            'NLD' => 'NL', 'BEL' => 'BE', 'CHE' => 'CH', 'AUT' => 'AT',
-            'PRT' => 'PT', 'GRC' => 'GR', 'SAU' => 'SA', 'ARE' => 'AE',
-        ];
-
-        $countryRawCode = strtoupper($country->code ?? 'GB');
-        $editorCode = strlen($countryRawCode) === 3
-            ? ($alpha3map[$countryRawCode] ?? strtoupper(substr($countryRawCode, 0, 2)))
-            : $countryRawCode;
-        $editorName = $editorNames[$editorCode] ?? 'Prof. Yogendra Mishra';
+        // Fixed Chief Editor for all certificates
+        $editorName = 'Theron Blackwell';
 
         // ── Imzo bloki (chap pastki, logoga tegmagan holda) ──────────
         // Barcha sertifikatlar uchun maxsus imzo tasvirini yuklash va chizish
