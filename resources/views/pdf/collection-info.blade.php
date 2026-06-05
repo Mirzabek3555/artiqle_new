@@ -114,6 +114,7 @@
             'title' => 'Chief Editor',
             'uni'   => 'International Scientific Conferences Publishing Group',
             'email' => 't.blackwell@iscpublishing.org',
+            'city'  => 'USA',
         ];
     @endphp
 
