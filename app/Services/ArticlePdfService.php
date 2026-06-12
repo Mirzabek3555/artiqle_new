@@ -495,7 +495,7 @@ class ArticlePdfService
         $headerHeight = $this->drawIncopHeader($pdf, $article, $country, $conference, $leftMargin);
         $currentOutY = $headerHeight + 2; // Start content below header
 
-        $outBottomLimit = 280; // Footer mask bilan ANIQ mos (sahifa raqami uchun 17mm)
+        $outBottomLimit = 282; // Footer mask bilan ANIQ mos (footer 282mm dan boshlanadi)
 
         $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
 
@@ -528,7 +528,7 @@ class ArticlePdfService
                 $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
 
                 $currentOutY = 25;
-                $outBottomLimit = 280;
+                $outBottomLimit = 282;
                 $spaceOnOutput = $outBottomLimit - $currentOutY;
             }
 
@@ -588,8 +588,8 @@ class ArticlePdfService
 
                     // Content header maskasi bilan ANIQ mos — 25mm
                     $currentOutY = 25;
-                    // Footer mask bilan ANIQ mos — 280mm
-                    $outBottomLimit = 280;
+                    // Footer mask bilan ANIQ mos — 282mm
+                    $outBottomLimit = 282;
                 }
             }
         }
@@ -609,7 +609,7 @@ class ArticlePdfService
                 $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
                 $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
                 $currentOutY = 25;
-                $outBottomLimit = 280;
+                $outBottomLimit = 282;
             }
 
             $pdf->SetY($currentOutY);
@@ -633,7 +633,7 @@ class ArticlePdfService
                     $this->drawIncopRunningHeader($pdf, $article, $conference, $leftMargin);
                     $this->drawIncopFooter($pdf, $article, $country, $outputPageCount + $pageOffset, 0, $leftMargin);
                     $currentOutY = 25;
-                    $outBottomLimit = 280;
+                    $outBottomLimit = 282;
                 }
 
                 // References qatorni yozish
