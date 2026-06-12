@@ -1378,19 +1378,26 @@ class ArticlePdfService
 
             return $currentY;
         }
-        // Umumiy blok uchun juda ochiq primary rang fon
-        $totalBlockHeight = $titleH + $gap + $authorsH + $gap + $abstractH + ($abstractH ? $gap : 0) + $keywordsH + ($keywordsH ? $gap : 0) + $padding * 2;
+        // Faqat title + author qismi uchun fon balandligi
+        // (Abstract va Keywords alohida o'z foniga ega — shu yerga qo'shilmaydi)
+        $titleAuthorBlockHeight = $titleH + $gap + $authorsH + $padding * 2;
 
-        // Umumiy blok uchun juda ochiq primary rang fon
+        // Abstract va Keywords balandliklarini hisoblash (chap chiziq uchun kerak)
+        $pdf->SetFont('freeserif', '', 11);
+        $abstractH = !empty($abstractObj) ? $pdf->getStringHeight($contentWidth - 6, $abstractObj) + 4 + $gap + 2 : 0;
+        $keywordsH = !empty($keywordsObj) ? $pdf->getStringHeight($contentWidth - 6, $keywordsObj) + 4 + 1 : 0;
+        $totalBlockHeight = $titleAuthorBlockHeight + $abstractH + $keywordsH;
+
+        // Faqat title + author zonasi uchun och primary rang fon ("Annotatsiya" gacha)
         $veryLightPrimary = [
             'r' => (int) ($primaryRgb['r'] + (255 - $primaryRgb['r']) * 0.92),
             'g' => (int) ($primaryRgb['g'] + (255 - $primaryRgb['g']) * 0.92),
             'b' => (int) ($primaryRgb['b'] + (255 - $primaryRgb['b']) * 0.92),
         ];
         $pdf->SetFillColor($veryLightPrimary['r'], $veryLightPrimary['g'], $veryLightPrimary['b']);
-        $pdf->Rect($leftMargin, $currentY, $contentWidth, $totalBlockHeight, 'F');
+        $pdf->Rect($leftMargin, $currentY, $contentWidth, $titleAuthorBlockHeight, 'F');
 
-        // Chap tomonda davlat rangli chegaraviy chiziq (3mm kenglikda)
+        // Chap tomonda davlat rangli chegaraviy chiziq — butun header bo'ylab (3mm kenglikda)
         $pdf->SetFillColor($primaryRgb['r'], $primaryRgb['g'], $primaryRgb['b']);
         $pdf->Rect($leftMargin, $currentY, 2.5, $totalBlockHeight, 'F');
 
