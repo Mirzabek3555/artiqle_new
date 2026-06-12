@@ -1612,9 +1612,11 @@ class ArticlePdfService
     private function drawIncopFooter($pdf, $article, $country, $pageNo, $totalPages, $leftMargin = 28): void
     {
         $pageWidth = 210;
-        // Footer maskasi — pastki 25mm ni yopish (asl fayldagi sahifa raqamlarini yashirish uchun)
-        $footerMaskStart = 272; // content 272mm da to'xtaydi
-        $footerMaskHeight = 297 - $footerMaskStart; // 25mm
+        // Footer maskasi — Puppeteer bottom margin 15mm bilan mos:
+        // matn 297 - 15 = 282mm gacha tushishi mumkin,
+        // shuning uchun mask 282mm dan boshlanadi (15mm zona)
+        $footerMaskStart = 282; // content 282mm da to'xtaydi (Puppeteer 15mm bottom margin)
+        $footerMaskHeight = 297 - $footerMaskStart; // 15mm
         $pdf->SetFillColor(255, 255, 255);
         $pdf->Rect(0, $footerMaskStart, $pageWidth, $footerMaskHeight, 'F');
 
