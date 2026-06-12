@@ -16,7 +16,7 @@ const topMarginFirstPage = process.argv[3] || '20mm';
 const topMarginRest = process.argv[4] || '20mm';
 const leftMargin = process.argv[5] || '20mm';
 const rightMargin = process.argv[6] || '15mm';
-const bottomMargin = process.argv[7] || '20mm';
+const bottomMargin = process.argv[7] || '15mm';
 
 if (!outputPath) {
     console.error(JSON.stringify({ error: 'Output PDF yo\'li ko\'rsatilmagan' }));

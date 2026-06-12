@@ -183,7 +183,7 @@ class ArticlePdfService
             '22mm', // Subsequent pages top margin (running header ~21mm + 1mm gap)
             '33mm', // Left margin
             '15mm', // Right margin
-            '25mm'  // Bottom margin (footer ~25mm from bottom to hide original page numbers)
+            '15mm'  // Bottom margin — kichikroq qiymat matnni to'g'ri sig'diradi
         );
 
         // 4. Base PDF ni article ga saqlash
