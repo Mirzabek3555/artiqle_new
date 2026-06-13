@@ -1320,6 +1320,7 @@ class ArticlePdfService
                         $dataTm = $page->getDataTm();
                         $cleanTitle = mb_strtolower($article->title);
                         
+                        $possibleYValues = [];
                         foreach ($dataTm as $element) {
                             $text = trim($element[1]);
                             if (empty($text)) continue;
@@ -1343,10 +1344,14 @@ class ArticlePdfService
                             
                             // Annotatsiya yoki Kirish qismlarining kalit so'zlari
                             if (preg_match('/^(annotatsiya|abstract|аннотация|kirish|introduction|введение|kalit\s*so|key\s*words|ключевые)/i', $text)) {
-                                $abstractY = $finalY;
-                                Log::info("Found abstract Y in drawIncopHeader: '$text' at {$abstractY}mm");
-                                break;
+                                $possibleYValues[] = $finalY;
+                                Log::info("Found keyword in drawIncopHeader: '$text' at {$finalY}mm");
                             }
+                        }
+                        
+                        if (!empty($possibleYValues)) {
+                            $abstractY = min($possibleYValues);
+                            Log::info("Selected abstract Y: {$abstractY}mm");
                         }
                     }
                 } catch (\Exception $e) {
@@ -1378,26 +1383,19 @@ class ArticlePdfService
 
             return $currentY;
         }
-        // Faqat title + author qismi uchun fon balandligi
-        // (Abstract va Keywords alohida o'z foniga ega — shu yerga qo'shilmaydi)
-        $titleAuthorBlockHeight = $titleH + $gap + $authorsH + $padding * 2;
+        // Umumiy blok uchun juda ochiq primary rang fon
+        $totalBlockHeight = $titleH + $gap + $authorsH + $gap + $abstractH + ($abstractH ? $gap : 0) + $keywordsH + ($keywordsH ? $gap : 0) + $padding * 2;
 
-        // Abstract va Keywords balandliklarini hisoblash (chap chiziq uchun kerak)
-        $pdf->SetFont('freeserif', '', 11);
-        $abstractH = !empty($abstractObj) ? $pdf->getStringHeight($contentWidth - 6, $abstractObj) + 4 + $gap + 2 : 0;
-        $keywordsH = !empty($keywordsObj) ? $pdf->getStringHeight($contentWidth - 6, $keywordsObj) + 4 + 1 : 0;
-        $totalBlockHeight = $titleAuthorBlockHeight + $abstractH + $keywordsH;
-
-        // Faqat title + author zonasi uchun och primary rang fon ("Annotatsiya" gacha)
+        // Umumiy blok uchun juda ochiq primary rang fon
         $veryLightPrimary = [
             'r' => (int) ($primaryRgb['r'] + (255 - $primaryRgb['r']) * 0.92),
             'g' => (int) ($primaryRgb['g'] + (255 - $primaryRgb['g']) * 0.92),
             'b' => (int) ($primaryRgb['b'] + (255 - $primaryRgb['b']) * 0.92),
         ];
         $pdf->SetFillColor($veryLightPrimary['r'], $veryLightPrimary['g'], $veryLightPrimary['b']);
-        $pdf->Rect($leftMargin, $currentY, $contentWidth, $titleAuthorBlockHeight, 'F');
+        $pdf->Rect($leftMargin, $currentY, $contentWidth, $totalBlockHeight, 'F');
 
-        // Chap tomonda davlat rangli chegaraviy chiziq — butun header bo'ylab (3mm kenglikda)
+        // Chap tomonda davlat rangli chegaraviy chiziq (3mm kenglikda)
         $pdf->SetFillColor($primaryRgb['r'], $primaryRgb['g'], $primaryRgb['b']);
         $pdf->Rect($leftMargin, $currentY, 2.5, $totalBlockHeight, 'F');
 
